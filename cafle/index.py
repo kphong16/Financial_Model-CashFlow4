@@ -184,7 +184,11 @@ class PrjtIndex(object):
             return val
     
     def __getitem__(self, idxno):
-        return self._prjt[idxno]
+        if type(idxno) is int:
+            return self._prjt[idxno]
+        elif type(idxno) is str:
+            tmpidx = getattr(self, idxno)
+            return tmpidx
     
     def __len__(self):
         return len(self._prjt)

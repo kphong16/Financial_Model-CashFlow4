@@ -7,13 +7,14 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import date
 from functools import wraps
+import json
 
 # import genfunc
 # from index import Index
 from .genfunc import *
 from .index import Index, PrjtIndex
 
-__all__ = ['Account', 'Merge', 'Intlz_accounts']
+__all__ = ['Account', 'Merge', 'Collect', 'Intlz_accounts']
 
 class Account(object):
     """
@@ -511,17 +512,115 @@ class Merge(object):
     #### 작성 중 ####
         
 
-"""
-class _idxsrch:
-    def __init__(self) -> None:
-        self._name = None
-    
-    def __set_name__(self, owner, name):
-        self._name = name
+class Collect(object):
+    def __init__(self, index, data_json=None, adrs_json=None):
+        self.index = index
+        self._dct = {}
+        self.data_json = data_json
+        self.adrs_json = adrs_json
         
-    def __set__(self, instance, value):
-        instance.__dict__[self._name] = value
-"""     
+        self._read_json(data_json=self.data_json, adrs_json=self.adrs_json)
+        self._create_account()
+        self._acc_addscdd()
+        
+    def _read_json(self, data_json=None, adrs_json=None):
+        if data_json==None and adrs_json is not None:
+            with open(adrs_json, "r") as f:
+                self._dct = json.load(f)
+        elif data_json is not None and adrs_json is None:
+            self._dct = data_json
+    
+    def _create_account(self):
+        lst_key = self.lfkey("title", return_val="dict")
+        
+        for dct in lst_key:
+            if "account" not in dct:
+                if "tag" in dct:
+                    tag = dct["tag"]
+                else:
+                    tag = None
+                
+                if "balstrt" in dct:
+                    balstrt = dct["balstrt"]
+                else:
+                    balstrt = 0
+                
+                if "note" in dct:
+                    note = dct["note"]
+                else:
+                    note = ""
+                
+                dct["account"] = Account(self.index, dct["title"], tag, balstrt, note)
+                
+
+    def _idxAdjuster(self, idxstr):
+        idxstr = "self.index." + idxstr
+        return eval(idxstr)
+        
+    def _acc_addscdd(self):
+        _lst = self.lfkey("account", return_val="dict")
+        for cst in _lst:
+            if "addscdd_mtrx" in cst:
+                _scddidx = cst["addscdd_mtrx"][0]
+                _scddamt = cst["addscdd_mtrx"][1]
+                
+                _scddidx = [self._idxAdjuster(x) for x in _scddidx]
+                
+                cst["account"].addscdd(_scddidx, _scddamt)
+            
+            if "addscdd_period" in cst:
+                _scddidx = cst["addscdd_period"][0]
+                _scddidx = self._idxAdjuster(_scddidx).index
+                
+                _scddamt = cst["addscdd_period"][1]
+                _scddamt = [_scddamt for _ in _scddidx]
+                
+                cst["account"].addscdd(_scddidx, _scddamt)
+
+
+    def lfkey(self, key_name, return_val="item", dct=None):
+        """
+        PARAMETERS
+        - key_name : key name of dictionary which is looking for
+        - return_val : 
+            + "item" : return items of the dictionary
+            + "dict" : return the dictionary itself
+        - dct : dictionary on which key is looking for
+        """
+        lst = []
+        if dct is None:
+            dct = self._dct
+        for key, item in dct.items():
+            if key == key_name:
+                if return_val == "item":
+                    lst.append(item)
+                elif return_val == "dict":
+                    lst.append(dct)
+            if type(item) == dict:
+                tmp_lst = self.lfkey(key_name, return_val=return_val, dct=item)
+                lst.extend(tmp_lst)
+        return lst
+
+
+    def __getitem__(self, key_name):
+        if key_name == "all":
+            return self._dct
+        else:
+            return self.lfkey(key_name)[0]
+            
+            
+    def acc(self, key_name):
+        tmp_lst = self.lfkey(key_name)
+        
+        if len(tmp_lst) == 1:
+            try:
+                return tmp_lst[0]["account"]
+            except:
+                return None
+        elif len(tmp_lst) != 1:
+            raise ValueError
+            
+
         
 
 class Intlz_accounts:

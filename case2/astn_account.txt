@@ -1,0 +1,14 @@
+{
+    "oprtg": {
+        "title": "oprtg",
+        "byname": "운영계좌"
+    },
+    "sales": {
+        "title": "sales",
+        "byname": "매출계좌"
+    },
+    "repay": {
+        "title": "repay",
+        "byname": "상환계좌"
+    }
+}

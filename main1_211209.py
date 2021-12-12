@@ -438,22 +438,6 @@ for idxno in idx.index:
 
 
 
-#### Analysis of Results
-# Accounts
-
-
-
-k = data_area['mtrxpy']
-kj = k.to_json(orient='split')
-# kp = pd.read_json(kj, orient='split')
-
-kk = json.loads(kj)
-kk_col = pd.MultiIndex.from_tuples(kk['columns'])
-kk_idx = pd.MultiIndex.from_tuples(kk['index'])
-kk_data = kk['data']
-kk_df = DataFrame(kk_data, columns=kk_col, index=kk_idx)
-
-
 
 
 

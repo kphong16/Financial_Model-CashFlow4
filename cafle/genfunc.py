@@ -101,3 +101,16 @@ def round_up(number:float, decimals:int=2):
     
 def percent(val:float):
     return val / 100
+    
+    
+def read_json(dct):
+    if 'DataFrame' in dct['type']:
+        if 'index' in dct and 'columns' in dct:
+            dct['df'] = DataFrame(dct['data'], index=dct['index'], columns=dct['columns'])
+        elif 'columns' in dct:
+            dct['df'] = DataFrame(dct['data'], columns=dct['columns'])
+        elif 'index' in dct:
+            dct['df'] = DataFrame(dct['data'], index=dct['index'])
+        else:
+            dct['df'] = DataFrame(dct['data'])
+    return dct

@@ -1,0 +1,26 @@
+{
+    "index": {
+        "idxname"   : ["prjt",      "cstrn",    "loan",     "sales"],
+        "start"     : ["2021-12",   "2022-01",  "2022-01",  "2022-01"],
+        "periods"   : [35,          23,         29,         29],
+        "freq"      : "M"
+        },
+        
+    "equity": {
+        "title"     : "equity",
+        "amt_ntnl"  : 1300,
+        "amt_intl"  : 1300
+        },
+        
+    "loan": {
+        "title"     : ["tra",   "trb"],
+        "rnk"       : [0,       1],
+        "amt_ntnl"  : [75000,   22000],
+        "amt_intl"  : [18000,   22000],
+        "rate_fee"  : [0.020,   0.041],
+        "rate_IR"   : [0.043,   0.070],
+        "ttl_ntnl"  : 97000,
+        "ttl_intl"  : 40000,
+        "rate_arng" : 0.02
+        }
+}
