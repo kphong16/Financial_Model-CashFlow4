@@ -556,26 +556,38 @@ class Collect(object):
     def _idxAdjuster(self, idxstr):
         idxstr = "self.index." + idxstr
         return eval(idxstr)
+    
+    def _accReader(self, accstr):
+        lst = accstr.split(",")
+        idx = self._idxAdjuster(lst[1])
+        val = self.acc(lst[0]).df.loc[idx, lst[2]]
+        return val
         
     def _acc_addscdd(self):
         _lst = self.lfkey("account", return_val="dict")
-        for cst in _lst:
-            if "addscdd_mtrx" in cst:
-                _scddidx = cst["addscdd_mtrx"][0]
-                _scddamt = cst["addscdd_mtrx"][1]
+        for cst in _lst:                
+            if "scdd_period" in cst:
+                cst_sp = cst["scdd_period"] 
+                _mode = cst_sp["mode"]
                 
-                _scddidx = [self._idxAdjuster(x) for x in _scddidx]
+                if "index_name" in cst_sp:
+                    _index_name = cst_sp["index_name"]
+                    _index = self._idxAdjuster(_index_name).index
+                elif "index" in cst_sp:
+                    _index = [self._idxAdjuster(x) for x in cst_sp["index"]]
+                _len = len(_index)
                 
-                cst["account"].addscdd(_scddidx, _scddamt)
-            
-            if "addscdd_period" in cst:
-                _scddidx = cst["addscdd_period"][0]
-                _scddidx = self._idxAdjuster(_scddidx).index
+                if "lstamt" in cst_sp:
+                    _lstamt = cst_sp["lstamt"]
+                elif "unitamt" in cst_sp:
+                    _lstamt = cst_sp["unitamt"]
+                elif "ttlamt" in cst_sp:
+                    _lstamt = cst_sp["ttlamt"] / _len
                 
-                _scddamt = cst["addscdd_period"][1]
-                _scddamt = [_scddamt for _ in _scddidx]
-                
-                cst["account"].addscdd(_scddidx, _scddamt)
+                if _mode == "add":
+                    cst["account"].addscdd(_index, _lstamt)
+                elif _mode == "sub":
+                    cst["account"].subscdd(_index, _lstamt)
 
 
     def lfkey(self, key_name, return_val="item", dct=None):

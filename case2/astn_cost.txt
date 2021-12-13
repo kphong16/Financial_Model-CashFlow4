@@ -4,32 +4,41 @@
             "title": "lnd_prchs",
             "byname": "용지매입비",
             "amt": 14500,
-            "addscdd_mtrx": [["prjt[0]",  "loan[0]"],
-                             [1000,    13500]]
-            },
+            "scdd_period":{
+                "mode": "add",
+                "index": ["prjt[0]",    "loan[0]"],
+                "lstamt": [1000,         13500]
+            }
+        },
         "brkrg": {
             "title": "lnd_brkrg",
             "byname": "부동산중개비용",
-            "addscdd_mtrx"  : [["prjt[0]", "loan[0]"],
-                               [39, 1000]]
-            },
+            "scdd_period":{
+                "mode": "add",
+                "index": ["prjt[0]",  "loan[0]"],
+                "lstamt": [39,         1000]
+            }
+        },
         "tax_aqstn": {
             "title": "lnd_tax_aqstn",
             "byname": "취등록세",
             "취득세율": 0.040,
             "농특세율": 0.002,
             "교육세율": 0.004, 
+            "eval": "prchs,prjt[1],bal_end",
             "additional_addscdd": true
-            }
-        },
+        }
+    },
     "cstrn": {
         "cstrndrt": {
             "title": "cstrn_cstrndrt",
             "byname": "직접공사비",
             "amt" : 65000,
-            "addscdd_period": ["cstrn", 8125],
-            "addscdd_mtrx"  : [["cstrn[0]", "cstrn[3]", "cstrn[6]", "cstrn[9]", "cstrn[12]", "cstrn[15]", "cstrn[18]", "cstrn[21]"],
-                               [8125, 8125, 8125, 8125, 8125, 8125, 8125, 8125]]
+            "scdd_period": {
+                "mode": "add",
+                "index_name": "cstrn",
+                "ttlamt": 65000
             }
         }
+    }
 }
