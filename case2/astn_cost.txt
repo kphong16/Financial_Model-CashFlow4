@@ -3,21 +3,25 @@
         "prchs": {
             "title": "lnd_prchs",
             "byname": "용지매입비",
-            "amt": 14500,
+            "amtttl": 14500,
             "scdd_period":{
                 "mode": "add",
                 "index": ["prjt[0]",    "loan[0]"],
-                "lstamt": [1000,         13500]
+                "amtlst": [1000,         13500]
             }
         },
         "brkrg": {
             "title": "lnd_brkrg",
             "byname": "부동산중개비용",
+            "amtbase": "account:prchs,loan[1],add_scdd_cum",
+            "rate": 0.009,
             "scdd_period":{
                 "mode": "add",
-                "index": ["prjt[0]",  "loan[0]"],
-                "lstamt": [39,         1000]
-            }
+                "index": ["prjt[0]"],
+                "amtlst": [39]
+            },
+            "additional_scdd": true,
+            "additional_note": "amtbase * rate - initial cost"
         },
         "tax_aqstn": {
             "title": "lnd_tax_aqstn",
@@ -26,18 +30,24 @@
             "농특세율": 0.002,
             "교육세율": 0.004, 
             "eval": "prchs,prjt[1],bal_end",
-            "additional_addscdd": true
+            "additional_scdd": true,
+            "scdd_period": {
+                "mode": "add",
+                "index": ["loan[1]"],
+                "amtclt": ["account:prchs,loan[1],add_scdd_cum"],
+                "rate": 0.046
+            }
         }
     },
     "cstrn": {
         "cstrndrt": {
             "title": "cstrn_cstrndrt",
             "byname": "직접공사비",
-            "amt" : 65000,
+            "amtttl" : 65000,
             "scdd_period": {
                 "mode": "add",
                 "index_name": "cstrn",
-                "ttlamt": 65000
+                "amtttl": 65000
             }
         }
     }

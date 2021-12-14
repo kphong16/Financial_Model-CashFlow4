@@ -557,11 +557,19 @@ class Collect(object):
         idxstr = "self.index." + idxstr
         return eval(idxstr)
     
-    def _accReader(self, accstr):
+    def accReader(self, accstr):
         lst = accstr.split(",")
         idx = self._idxAdjuster(lst[1])
-        val = self.acc(lst[0]).df.loc[idx, lst[2]]
+        val = self.acc(lst[0])._df.loc[idx, lst[2]]
         return val
+        
+    def amtReader(self, amtval):
+        if type(amtval) is str:
+            lst = amtval.split(":")
+            if lst[0] == "account":
+                return self.accReader(lst[1])
+        else:
+            return amtval
         
     def _acc_addscdd(self):
         _lst = self.lfkey("account", return_val="dict")
@@ -573,16 +581,27 @@ class Collect(object):
                 if "index_name" in cst_sp:
                     _index_name = cst_sp["index_name"]
                     _index = self._idxAdjuster(_index_name).index
+                    cst_sp["index"] = _index
                 elif "index" in cst_sp:
                     _index = [self._idxAdjuster(x) for x in cst_sp["index"]]
+                    cst_sp["index"] = _index
                 _len = len(_index)
                 
-                if "lstamt" in cst_sp:
-                    _lstamt = cst_sp["lstamt"]
-                elif "unitamt" in cst_sp:
-                    _lstamt = cst_sp["unitamt"]
-                elif "ttlamt" in cst_sp:
-                    _lstamt = cst_sp["ttlamt"] / _len
+                if "amtlst" in cst_sp:
+                    _lstamt = cst_sp["amtlst"]
+                elif "amtunit" in cst_sp:
+                    _lstamt = cst_sp["amtunit"]
+                elif "amtttl" in cst_sp:
+                    _lstamt = cst_sp["amtttl"] / _len
+                elif "amtclt" in cst_sp:
+                    _lstamt = sum([self.amtReader(x) for x in cst_sp["amtclt"]])
+                    
+                if "rate" in cst_sp:
+                    _rate = cst_sp["rate"]
+                    if type(_lstamt) is list:
+                        _lstamt = [x * y for x, y in zip(_lstamt, _rate)]
+                    else:
+                        _lstamt = _lstamt * _rate
                 
                 if _mode == "add":
                     cst["account"].addscdd(_index, _lstamt)

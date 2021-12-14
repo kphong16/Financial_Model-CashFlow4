@@ -35,7 +35,7 @@ idx = cf.PrjtIndex(idxname = astn.index['idxname'],
                    start   = astn.index['start'],
                    periods = astn.index['periods'],
                    freq    = astn.index['freq'])
-                   
+
 equity = cf.Loan(idx,
                  amt_ntnl = astn.equity["amt_ntnl"],
                  amt_intl = astn.equity["amt_ntnl"])
@@ -59,34 +59,10 @@ sales.subscdd(idx.sales[-1], astn.sales['amount'])
 
 
 #### Read Cost Data and Create Cost Accounts ####
-cost = cf.Collect(idx, adrs_json=f"{CASE}/astn_cost.txt")
+import case2.astn_cost2 as cost_mdl
+cost_mdl.idx = idx
+cost = cost_mdl.Cost()
 
-
-## Additional Add Schedule ##
-
-if cost["brkrg"]["additional_scdd"] is True:
-    cstbkg = cost["brkrg"]
-    cstbkg["amtbase"] = cost.amtReader(cstbkg["amtbase"])
-    cstbkg["amtttl"] = cstbkg["amtbase"] * cstbkg["rate"]
-    _idx = idx.loan[0]
-    _amt_existing = cstbkg["account"]._df.loc[_idx, "add_scdd_cum"]
-    _amt = cstbkg["amtttl"] - _amt_existing
-    cstbkg["account"].addscdd(_idx, _amt)
-    cstbkg["additional_scdd"] = False
-
-
-
-"""
-# Additional add schedule
-if cost["tax_aqstn"]["additional_addscdd"] == True:
-    tmp_rate = cost["tax_aqstn"]["취득세율"] + \
-               cost["tax_aqstn"]["농특세율"] + \
-               cost["tax_aqstn"]["교육세율"]
-    tmp_amt = cost["prchs"]["amt"] * tmp_rate
-    tmp_idx = idx.loan[0]
-    cost.acc("tax_aqstn").addscdd(tmp_idx, tmp_amt)
-    cost["tax_aqstn"]["additional_addscdd"] = False
-"""
 
 #### Read Operating Accounts Data and Create ####
 acc = cf.Collect(idx, adrs_json=f"{CASE}/astn_account.txt")
@@ -173,11 +149,7 @@ for idxno in idx.index:
     equity.setback_wtdrbl_mtrt(idxno)
     for rnk in loan.rnk:
         loan[rnk].setback_wtdrbl_mtrt(idxno)
-        
-        
-        
-        
-        
+
         
         
         
