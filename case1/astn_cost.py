@@ -26,8 +26,8 @@ class Cost(object):
         
         self._input_initial_data()
     
-    ###################################################################################
-    #### Input Data                                                                ####
+    ###################################################################
+    #### Input Data                                                ####
     def _input_initial_data(self):
         #########################
         #### Input Land Cost ####
@@ -252,12 +252,85 @@ class Cost(object):
         ###############################
         #### Tax and Utility Bills ####
         self._dct["txutlt"] = {}
-        self.mktg = self._dct["mktg"]
+        self.txutlt = self._dct["txutlt"]
         
+        ## Property tax ##
+        _ipt = {"title"         : "txutlt_prpttx",
+                "byname"        : "재산세종부세",
+                "scddidx"       : [idx.locval(2022, 6), idx.locval(2023,6)],
+                "scddamt"       : [37,                  37]}
+        self.txutlt["prpttx"] = _ipt
+        self.prpttx = self.txutlt["prpttx"]
+        
+        self.prpttx["amtttl"] = sum(self.prpttx["scddamt"])
+        self.prpttx["account"] = Account(idx, self.prpttx["title"])
+        self.prpttx["account"].addscdd(self.prpttx["scddidx"], self.prpttx["scddamt"])
+        
+        ## Preservation and Registration Cost ##
+        _ipt = {"title"         : "txutlt_rgstrtn",
+                "byname"        : "보존등기비",
+                "amtbase"       : self.ctndrt["amtttl"],
+                "취득세율"        : 0.028,
+                "농특세율"        : 0.002,
+                "교육세율"        : 0.0016,
+                "법무사"          : 0.0024,
+                "scddidx"       : idx.loan[-2]}
+        self.txutlt["rgstrtn"] = _ipt
+        self.rgstrtn = self.txutlt["rgstrtn"]
+        
+        self.rgstrtn["ratebase"] = self.rgstrtn["취득세율"] + self.rgstrtn["농특세율"] \
+                                   + self.rgstrtn["교육세율"] + self.rgstrtn["법무사"]
+        self.rgstrtn["amtttl"] = self.rgstrtn["amtbase"] * self.rgstrtn["ratebase"]
+        self.rgstrtn["scddamt"] = self.rgstrtn["amtttl"]
+        self.rgstrtn["account"] = Account(idx, self.rgstrtn["title"])
+        self.rgstrtn["account"].addscdd(self.rgstrtn["scddidx"], self.rgstrtn["scddamt"])
+        
+        
+        #########################
+        #### Additional Cost ####
+        self._dct["adtnl"] = {}
+        self.adtnl = self._dct["adtnl"]
+        
+        ## PM Fee ##
+        _ipt = {"title"         : "adtnl_pmfee",
+                "byname"        : "PM수수료",
+                "amtttl"        : 200,
+                "scddidx"       : idx.loan[0]}
+        self.adtnl["pmfee"] = _ipt
+        self.pmfee = self.adtnl["pmfee"]
+        
+        self.pmfee["scddamt"] = self.pmfee["amtttl"]
+        self.pmfee["account"] = Account(idx, self.pmfee["title"])
+        self.pmfee["account"].addscdd(self.pmfee["scddidx"], self.pmfee["scddamt"])
+        
+        ## Company Operating Cost ##
+        _ipt = {"title"         : "adtnl_oprtgcst",
+                "byname"        : "운영비",
+                "amtunit"        : 30,
+                "scddidx"       : idx.loan.index}
+        self.adtnl["oprtgcst"] = _ipt
+        self.oprtgcst = self.adtnl["oprtgcst"]
+        
+        self.oprtgcst["account"] = Account(idx, self.oprtgcst["title"])
+        self.oprtgcst["account"].addscdd(self.oprtgcst["scddidx"], self.oprtgcst["amtunit"])
+        self.oprtgcst["amtttl"] = sum(self.oprtgcst["account"].df["add_scdd"])
+        
+        ## Reserve Fund ##
+        _ipt = {"title"         : "adtnl_rsrvfnd",
+                "byname"        : "예비비",
+                "amtttl"        : 500,
+                "scddidx"       : [idx.loan[10], idx.loan[20]],
+                "scddrate"      : [0.5,                 0.5]}
+        self.adtnl["rsrvfnd"] = _ipt
+        self.rsrvfnd = self.adtnl["rsrvfnd"]
+        
+        self.rsrvfnd["scddamt"] = [self.rsrvfnd["amtttl"] * x for x in self.rsrvfnd["scddrate"]]
+        self.rsrvfnd["account"] = Account(idx, self.rsrvfnd["title"])
+        self.rsrvfnd["account"].addscdd(self.rsrvfnd["scddidx"], self.rsrvfnd["scddamt"])
         
     
-    #### Input Data                                                                ####
-    ###################################################################################
+    #### Input Data                                                ####
+    ###################################################################
 
     def lfkey(self, key_name, return_val="item", dct_ipt=None):
         """

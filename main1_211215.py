@@ -12,6 +12,9 @@ import pandas as pd
 from pandas import Series, DataFrame
 import numpy as np
 
+pd.set_option('display.max_row', 200)
+pd.set_option('display.max_columns', 100)
+
 import cafle as cf
 from cafle.genfunc import rounding as R
 from cafle.genfunc import PY
@@ -20,34 +23,24 @@ from cafle.genfunc import read_json
 
 
 #### Initial Setting ####
-CASE = "case2"
+CASE = "case1"
 astn = EmptyClass()
 
+#### Read Financing Data ####
+import case1.astn_financing as fnc_mdl
+fnc = {}
+fnc["idx"] = fnc_mdl.Idx()
+idx = fnc["idx"].idx
+fnc_mdl.idx = idx
 
-#### Read Financing Condition Data ####
-with open(f'{CASE}/astn_financing.txt', 'r') as f:
-    astn.fnc = json.load(f)
-    astn.index = astn.fnc['index']
-    astn.equity = astn.fnc['equity']
-    astn.loan = astn.fnc['loan']
-    
-idx = cf.PrjtIndex(idxname = astn.index['idxname'],
-                   start   = astn.index['start'],
-                   periods = astn.index['periods'],
-                   freq    = astn.index['freq'])
+fnc["equity"] = fnc_mdl.Equity(fnc["idx"])
+equity = fnc["equity"].equity
 
-equity = cf.Loan(idx,
-                 amt_ntnl = astn.equity["amt_ntnl"],
-                 amt_intl = astn.equity["amt_ntnl"])
-                 
-loan = cf.Intlz_loan(idx, idx.loan,
-                     title    = astn.loan["title"],
-                     rnk      = astn.loan["rnk"],
-                     amt_ntnl = astn.loan["amt_ntnl"],
-                     amt_intl = astn.loan["amt_intl"],
-                     rate_fee = astn.loan["rate_fee"],
-                     rate_IR  = astn.loan["rate_IR"])
+fnc["loan"] = fnc_mdl.Loan(fnc["idx"])
+loan = fnc["loan"].loan
 
+fnc["fnccst"] = fnc_mdl.FncCst(fnc["loan"])
+fnccst = fnc["fnccst"]
 
 #### Read Sales Data ####
 with open(f"{CASE}/astn_sales.txt", "r") as f:
@@ -59,7 +52,7 @@ sales.subscdd(idx.sales[-1], astn.sales['amount'])
 
 
 #### Read Cost Data and Create Cost Accounts ####
-import case2.astn_cost2 as cost_mdl
+import case1.astn_cost as cost_mdl
 cost_mdl.idx = idx
 cost = cost_mdl.Cost()
 
@@ -85,7 +78,10 @@ for idxno in idx.index:
     # calculate operating costs
     _oprtg_cost = [_acc.add_scdd[idxno] for _acc in cost.lfkey("account")]
     oprtg_cost = sum(_oprtg_cost)
-        
+    
+    _fncrsng_cost = [_acc.add_scdd[idxno] for _acc in fnccst.lfkey("account")]
+    fncrsng_cost = sum(_fncrsng_cost)
+    
     # calculate financial costs
     for rnk in loan.rnk:
         if idxno == loan[rnk].idxfn[0]:
@@ -97,7 +93,7 @@ for idxno in idx.index:
     fncl_fee = loan.ttl.fee.add_scdd[idxno]
     fncl_IR = loan.ttl.IR.add_scdd[idxno]
 
-    cost_ttl = oprtg_cost + fncl_fee + fncl_IR
+    cost_ttl = oprtg_cost + fncrsng_cost + fncl_fee + fncl_IR
         
     
     #### Loans: withdraw loan ####
@@ -122,7 +118,12 @@ for idxno in idx.index:
     for cst in lst_cst:
         amt_scdd = cst.add_scdd[idxno]
         acc.acc("oprtg").send(idxno, amt_scdd, cst)
-        
+    
+    #### Finance Raising Cost: 금융조달비용 ####
+    lst_fncrsng = fnccst.lfkey("account")
+    for fncrsng in lst_fncrsng:
+        amt_scdd = fncrsng.add_scdd[idxno]
+        acc.acc("oprtg").send(idxno, amt_scdd, fncrsng)
         
     #### Loans: pay financial cost ####
     for rnk in loan.rnk:
