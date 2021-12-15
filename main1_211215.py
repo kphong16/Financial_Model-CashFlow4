@@ -26,6 +26,7 @@ from cafle.genfunc import read_json
 CASE = "case1"
 astn = EmptyClass()
 
+
 #### Read Financing Data ####
 import case1.astn_financing as fnc_mdl
 fnc = {}
@@ -42,13 +43,11 @@ loan = fnc["loan"].loan
 fnc["fnccst"] = fnc_mdl.FncCst(fnc["loan"])
 fnccst = fnc["fnccst"]
 
+
 #### Read Sales Data ####
-with open(f"{CASE}/astn_sales.txt", "r") as f:
-    astn.sales = json.load(f)
-    
-sales = cf.Account(idx, 'Sales')
-sales.addamt(idx.sales[0], astn.sales['amount'])
-sales.subscdd(idx.sales[-1], astn.sales['amount'])
+import case1.astn_sales as sales_mdl
+sales_mdl.idx = idx
+sales = sales_mdl.Sales().sales["account"]
 
 
 #### Read Cost Data and Create Cost Accounts ####
@@ -58,7 +57,9 @@ cost = cost_mdl.Cost()
 
 
 #### Read Operating Accounts Data and Create ####
-acc = cf.Collect(idx, adrs_json=f"{CASE}/astn_account.txt")
+import case1.astn_account as acc_mdl
+acc_mdl.idx = idx
+acc = acc_mdl.Acc()
 
 
 #### Execute Cash Flow ####
@@ -72,7 +73,7 @@ for idxno in idx.index:
     #### Cash Inflow: cash inflow from sales or rent etc. ####
     salesamt = sales.sub_scdd[idxno]
     if salesamt > 0:
-        sales.send(idxno, salesamt, acc.acc("repay"))
+        sales.send(idxno, salesamt, acc.repay)
         
     #### Expected Costs: calculate expected costs ####
     # calculate operating costs
@@ -98,51 +99,51 @@ for idxno in idx.index:
     
     #### Loans: withdraw loan ####
     # calculate the amount to withdraw
-    amt_rqrd = acc.acc("oprtg").amt_rqrd_excess(idxno, cost_ttl)
+    amt_rqrd = acc.oprtg.amt_rqrd_excess(idxno, cost_ttl)
     
     # withdraw loan amount
     amt_wtdrw = 0
-    amt_wtdrw += equity.wtdrw(idxno, equity.amt_intl, acc.acc("oprtg"))
+    amt_wtdrw += equity.wtdrw(idxno, equity.amt_intl, acc.oprtg)
     if idxno == idx.loan[0]:
         # withdraw initial loan amount
         for rnk in sorted(loan.rnk, reverse=True):
-            amt_wtdrw += loan[rnk].wtdrw(idxno, loan[rnk].amt_intl, acc.acc("oprtg"))
+            amt_wtdrw += loan[rnk].wtdrw(idxno, loan[rnk].amt_intl, acc.oprtg)
     
     amt_rqrd = max(amt_rqrd - amt_wtdrw, 0)
     for rnk in sorted(loan.rnk, reverse=True):
-        amt_rqrd = max(amt_rqrd - loan[rnk].wtdrw(idxno, amt_rqrd, acc.acc("oprtg")), 0)
+        amt_rqrd = max(amt_rqrd - loan[rnk].wtdrw(idxno, amt_rqrd, acc.oprtg), 0)
         
     
     #### Costs: 토지비, 공사비 등 각종 비용 지출 ####
     lst_cst = cost.lfkey("account")
     for cst in lst_cst:
         amt_scdd = cst.add_scdd[idxno]
-        acc.acc("oprtg").send(idxno, amt_scdd, cst)
+        acc.oprtg.send(idxno, amt_scdd, cst)
     
     #### Finance Raising Cost: 금융조달비용 ####
     lst_fncrsng = fnccst.lfkey("account")
     for fncrsng in lst_fncrsng:
         amt_scdd = fncrsng.add_scdd[idxno]
-        acc.acc("oprtg").send(idxno, amt_scdd, fncrsng)
+        acc.oprtg.send(idxno, amt_scdd, fncrsng)
         
     #### Loans: pay financial cost ####
     for rnk in loan.rnk:
-        acc.acc("oprtg").send(idxno, loan[rnk].fee.add_scdd[idxno], loan[rnk].fee)
+        acc.oprtg.send(idxno, loan[rnk].fee.add_scdd[idxno], loan[rnk].fee)
         
     for rnk in loan.rnk:
-        acc.acc("oprtg").send(idxno, loan[rnk].IR.add_scdd[idxno], loan[rnk].IR)
+        acc.oprtg.send(idxno, loan[rnk].IR.add_scdd[idxno], loan[rnk].IR)
         
         
     #### Loans: repay loan amount ####
     if idxno >= loan.idxfn[-1]: # 만기 도래 여부 확인
         for rnk in loan.rnk:
             if rnk == 0 or loan[rnk-1].is_repaid:
-                amtrpy = loan[rnk].repay_amt(idxno, acc.acc("repay").bal_end[idxno])
-                acc.acc("repay").send(idxno, amtrpy, loan[rnk].ntnl)
+                amtrpy = loan[rnk].repay_amt(idxno, acc.repay.bal_end[idxno])
+                acc.repay.send(idxno, amtrpy, loan[rnk].ntnl)
                 loan[rnk].set_repaid(idxno)
         
             if rnk == max(loan.rnk):
-                acc.acc("repay").send(idxno, acc.acc("repay").bal_end[idxno], acc.acc("oprtg"))
+                acc.repay.send(idxno, acc.repay.bal_end[idxno], acc.oprtg)
         
     
     #### Loans: Set back loan unwithdrawble at maturity ####
