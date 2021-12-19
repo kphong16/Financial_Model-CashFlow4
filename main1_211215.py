@@ -164,7 +164,7 @@ for idxno in idx.index:
             acc.oprtg.send(idxno, acc.oprtg.bal_end[idxno], equity.ntnl)
 
 
-#### Output Rusults ####
+#### Print out the results ####
 rslt_mdl = import_module(CASE + ".output_result")
 rslt_mdl.idx = idx
 rslt_mdl.equity = equity
