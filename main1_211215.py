@@ -8,6 +8,7 @@ Created on Fri Dec 10 13:15:43 2021
 
 import json
 import pickle
+import xlsxwriter
 from importlib import import_module
 import pandas as pd
 from pandas import Series, DataFrame
@@ -66,7 +67,7 @@ acc = acc_mdl.Acc()
 #### Execute Cash Flow ####
 for idxno in idx.index:
     #### Loans: set loan withdrawble ####
-    # If it's initial date then set loan withdrawble.
+    # If it's initial date then set loans withdrawble.
     equity.set_wtdrbl_intldate(idxno, idx[0])
     for rnk in loan.rnk:
         loan[rnk].set_wtdrbl_intldate(idxno)
@@ -77,21 +78,21 @@ for idxno in idx.index:
         sales.send(idxno, salesamt, acc.repay)
         
     #### Expected Costs: calculate expected costs ####
-    # calculate operating costs
+    # calculate operating costs on add_scdd
     _oprtg_cost = [_acc.add_scdd[idxno] for _acc in cost.lfkey("account")]
     oprtg_cost = sum(_oprtg_cost)
     
     _fncrsng_cost = [_acc.add_scdd[idxno] for _acc in fnccst.lfkey("account")]
     fncrsng_cost = sum(_fncrsng_cost)
     
-    # calculate financial costs
+    # calculate financial costs on add_scdd
     for rnk in loan.rnk:
         if idxno == loan[rnk].idxfn[0]:
             loan[rnk].fee.addscdd(idxno, loan[rnk].fee.amt)
         if all([loan[rnk].is_wtdrbl, not loan[rnk].is_repaid]):
             loan[rnk].IR.addscdd(idxno, loan[rnk].IRamt_topay(idxno))
     
-    # gathering financial costs
+    # gather financial costs
     fncl_fee = loan.ttl.fee.add_scdd[idxno]
     fncl_IR = loan.ttl.IR.add_scdd[idxno]
 
@@ -102,7 +103,7 @@ for idxno in idx.index:
     # calculate the amount to withdraw
     amt_rqrd = acc.oprtg.amt_rqrd_excess(idxno, cost_ttl)
     
-    # withdraw loan amount
+    # Withdraw loan amount
     amt_wtdrw = 0
     amt_wtdrw += equity.wtdrw(idxno, equity.amt_intl, acc.oprtg)
     if idxno == idx.loan[0]:
@@ -153,14 +154,19 @@ for idxno in idx.index:
     for rnk in loan.rnk:
         loan[rnk].setback_wtdrbl_mtrt(idxno)
 
-        
-        
-        
-        
-        
-        
-        
-        
+
+#### Output Rusults ####
+rslt_mdl = import_module(CASE + ".output_result")
+rslt_mdl.idx = idx
+rslt_mdl.equity = equity
+rslt_mdl.loan = loan
+rslt_mdl.sales = sales
+rslt_mdl.fnccst = fnccst
+rslt_mdl.cost = cost
+rslt_mdl.acc = acc
+rslt = rslt_mdl.WriteCF(CASE + "/result.xlsx")
+
+
         
         
         
