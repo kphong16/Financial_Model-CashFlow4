@@ -153,6 +153,15 @@ for idxno in idx.index:
     equity.setback_wtdrbl_mtrt(idxno)
     for rnk in loan.rnk:
         loan[rnk].setback_wtdrbl_mtrt(idxno)
+        
+    #### Equity: repay investment amount ####
+    if idxno == idx[-1]: # 사업 마지막 구간
+        _is_repaid = True
+        for rnk in loan.rnk:
+            if not loan[rnk].is_repaid:
+                _is_repaid = False
+        if _is_repaid:
+            acc.oprtg.send(idxno, acc.oprtg.bal_end[idxno], equity.ntnl)
 
 
 #### Output Rusults ####

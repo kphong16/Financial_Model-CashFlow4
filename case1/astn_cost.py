@@ -33,6 +33,7 @@ class Cost(object):
         #### Input Land Cost ####
         self._dct["lnd"] = {}
         self.lnd = self._dct["lnd"]
+        self.lnd["byname"] = "토지비"
         
         ## Land Purchase Cost ##
         _ipt = {"title"       : "lnd_prchs",
@@ -115,6 +116,7 @@ class Cost(object):
         #### Input Construction Cost ####
         self._dct["cstrn"] = {}
         self.cstrn = self._dct["cstrn"]
+        self.cstrn["byname"] = "건축비"
         
         ## Direct Construction Cost ##
         _ipt = {"title"         : "cstrn_ctndrt",
@@ -141,6 +143,7 @@ class Cost(object):
         #### Input Indirect Construction Cost ####
         self._dct["ctnidrt"] = {}
         self.ctnidrt = self._dct["ctnidrt"]
+        self.ctnidrt["byname"] = "간접건축비"
         
         ## License Cost ##
         _ipt = {"title"         : "ctnidrt_lcscst",
@@ -208,6 +211,7 @@ class Cost(object):
         #### Input Marketing Cost ####
         self._dct["mktg"] = {}
         self.mktg = self._dct["mktg"]
+        self.mktg["byname"] = "마케팅비"
 
         ## Advertisement and Promotion Cost ##
         _ipt = {"title"         : "mktg_advtmt",
@@ -253,6 +257,7 @@ class Cost(object):
         #### Tax and Utility Bills ####
         self._dct["txutlt"] = {}
         self.txutlt = self._dct["txutlt"]
+        self.txutlt["byname"] = "제세공과금"
         
         ## Property tax ##
         _ipt = {"title"         : "txutlt_prpttx",
@@ -290,6 +295,7 @@ class Cost(object):
         #### Additional Cost ####
         self._dct["adtnl"] = {}
         self.adtnl = self._dct["adtnl"]
+        self.adtnl["byname"] = "기타비용"
         
         ## PM Fee ##
         _ipt = {"title"         : "adtnl_pmfee",
