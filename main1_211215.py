@@ -8,6 +8,7 @@ Created on Fri Dec 10 13:15:43 2021
 
 import json
 import pickle
+from importlib import import_module
 import pandas as pd
 from pandas import Series, DataFrame
 import numpy as np
@@ -28,7 +29,7 @@ astn = EmptyClass()
 
 
 #### Read Financing Data ####
-import case1.astn_financing as fnc_mdl
+fnc_mdl = import_module(CASE + ".astn_financing")
 fnc = {}
 fnc["idx"] = fnc_mdl.Idx()
 idx = fnc["idx"].idx
@@ -45,19 +46,19 @@ fnccst = fnc["fnccst"]
 
 
 #### Read Sales Data ####
-import case1.astn_sales as sales_mdl
+sales_mdl = import_module(CASE + ".astn_sales")
 sales_mdl.idx = idx
 sales = sales_mdl.Sales().sales["account"]
 
 
 #### Read Cost Data and Create Cost Accounts ####
-import case1.astn_cost as cost_mdl
+cost_mdl = import_module(CASE + ".astn_cost")
 cost_mdl.idx = idx
 cost = cost_mdl.Cost()
 
 
 #### Read Operating Accounts Data and Create ####
-import case1.astn_account as acc_mdl
+acc_mdl = import_module(CASE + ".astn_account")
 acc_mdl.idx = idx
 acc = acc_mdl.Acc()
 
