@@ -82,8 +82,7 @@ class Loan(object):
             
         # 주요 변수 입력
         self.amt_ntnl = amt_ntnl
-        if amt_intl:
-            self.amt_intl = amt_intl
+        self.amt_intl = amt_intl
         self.rate_fee = rate_fee
         self.rate_IR = rate_IR
         self.IRcycle = IRcycle
@@ -221,7 +220,8 @@ class Loan(object):
         tmp_wtdrw = limited(amt,
                             upper=[ntnl_sub_rsdl],
                             lower=[0])
-        self.ntnl.send(idxno, tmp_wtdrw, acc)
+        if tmp_wtdrw > 0:
+            self.ntnl.send(idxno, tmp_wtdrw, acc)
         return tmp_wtdrw
     #### withdraw loan ####
     

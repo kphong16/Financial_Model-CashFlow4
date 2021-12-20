@@ -25,7 +25,7 @@ from cafle.genfunc import read_json
 
 
 #### Initial Setting ####
-CASE = "case1"
+CASE = "case2"
 astn = EmptyClass()
 
 

@@ -3,22 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to cafle's documentation!
-=================================
+Cafle: A cash flow estimating tool
+==================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: A:
-       
-   a_1
-   A/a_2.md
+**Cafle Module**
 
-.. toctree::
-   :maxdepth: 2
-   :caption: B:
-       
-   B/b_1.md
-   B/b_2.md
+| cafle is a module that can be used to estimate the cash flow of an alternative investment when reviewing various investment project.
+
+| Index, Account and Loan modules on "cafle" make it easier to estimate the cash flow of the project.
 
 
 Indices and tables
