@@ -9,6 +9,7 @@ Created on Fri Dec 10 13:15:43 2021
 import json
 import pickle
 import xlsxwriter
+from datetime import datetime
 from importlib import import_module
 import pandas as pd
 from pandas import Series, DataFrame
@@ -25,12 +26,22 @@ from cafle.genfunc import read_json
 
 
 #### Initial Setting ####
-CASE = "case2"
+CASE = "case2" # directory name
+VERSION = "v2.0_KBAM"
+
+ASTNFNC = ".astn_financing_211221_KBAM"
+ASTNCST = ".astn_cost_211221_KBAM"
+ASTNSLS = ".astn_sales"
+ASTNACC = ".astn_account"
+ASTNOVW = ".astn_overview"
+#DATE = datetime.now().strftime('%y%m%d')
+DATE = "211221"
+PRTNAME = "/"+CASE+"_"+VERSION+"_"+DATE+".xlsx"
 astn = EmptyClass()
 
 
 #### Read Financing Data ####
-fnc_mdl = import_module(CASE + ".astn_financing")
+fnc_mdl = import_module(CASE + ASTNFNC)
 fnc = {}
 fnc["idx"] = fnc_mdl.Idx()
 idx = fnc["idx"].idx
@@ -47,21 +58,30 @@ fnccst = fnc["fnccst"]
 
 
 #### Read Sales Data ####
-sales_mdl = import_module(CASE + ".astn_sales")
+sales_mdl = import_module(CASE + ASTNSLS)
 sales_mdl.idx = idx
 sales = sales_mdl.Sales().sales["account"]
 
 
 #### Read Cost Data and Create Cost Accounts ####
-cost_mdl = import_module(CASE + ".astn_cost")
+cost_mdl = import_module(CASE + ASTNCST)
 cost_mdl.idx = idx
 cost = cost_mdl.Cost()
 
 
 #### Read Operating Accounts Data and Create ####
-acc_mdl = import_module(CASE + ".astn_account")
+acc_mdl = import_module(CASE + ASTNACC)
 acc_mdl.idx = idx
 acc = acc_mdl.Acc()
+
+
+#### Read Overview Data ####
+ovw_mdl = import_module(CASE + ASTNOVW)
+ovw = ovw_mdl.Area()
+bsns = ovw.bsns
+area = ovw.areadf
+aream2 = ovw.aream2
+areapy = ovw.areapy
 
 
 #### Execute Cash Flow ####
@@ -91,12 +111,14 @@ for idxno in idx.index:
             loan[rnk].fee.addscdd(idxno, loan[rnk].fee.amt)
         if all([loan[rnk].is_wtdrbl, not loan[rnk].is_repaid]):
             loan[rnk].IR.addscdd(idxno, loan[rnk].IRamt_topay(idxno))
+            loan[rnk].fob.addscdd(idxno, loan[rnk].fobamt_topay(idxno))
     
     # gather financial costs
     fncl_fee = loan.ttl.fee.add_scdd[idxno]
     fncl_IR = loan.ttl.IR.add_scdd[idxno]
+    fncl_fob = loan.ttl.fob.add_scdd[idxno]
 
-    cost_ttl = oprtg_cost + fncrsng_cost + fncl_fee + fncl_IR
+    cost_ttl = oprtg_cost + fncrsng_cost + fncl_fee + fncl_IR + fncl_fob
         
     
     #### Loans: withdraw loan ####
@@ -134,6 +156,9 @@ for idxno in idx.index:
         
     for rnk in loan.rnk:
         acc.oprtg.send(idxno, loan[rnk].IR.add_scdd[idxno], loan[rnk].IR)
+        
+    for rnk in loan.rnk:
+        acc.oprtg.send(idxno, loan[rnk].fob.add_scdd[idxno], loan[rnk].fob)
         
         
     #### Loans: repay loan amount ####
@@ -173,7 +198,8 @@ rslt_mdl.sales = sales
 rslt_mdl.fnccst = fnccst
 rslt_mdl.cost = cost
 rslt_mdl.acc = acc
-rslt = rslt_mdl.WriteCF(CASE + "/result.xlsx")
+rslt_mdl.ovw = ovw
+rslt = rslt_mdl.WriteCF(CASE + PRTNAME)
 
 
         

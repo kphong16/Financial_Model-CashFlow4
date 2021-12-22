@@ -7,6 +7,7 @@ Created on Sun Dec 19 17:41:35 2021
 """
 
 import xlsxwriter
+from datetime import datetime
 
 # Get Attributes from Main
 idx = None
@@ -16,6 +17,7 @@ sales = None
 fnccst = None
 cost = None
 acc = None
+ovw = None
 
 class WriteCF(object):
     def __init__(self, file_adrs):
@@ -30,18 +32,81 @@ class WriteCF(object):
         self.fmt_num2 = self.wb.add_format({'num_format': '#,##0.0'})
         self.fmt_pct = self.wb.add_format({'num_format': '0.0%'})
         
+        self.datetime = datetime.now().strftime('%Y.%m.%d %H:%M:%S')
+        
+        self._writeovw()
         self._writecf()
         self._writeloan()
         self._writecst()
         
         self.wb.close()
     
+    
+    def _writeovw(self):
+        ws = self.wb.add_worksheet("overview")
+        ws.set_column(0, 0, 16)
+        ws.write_string(0, 0, "OVERVIEW", self.fmt_bold)
+        ws.write_string(1, 0, "Written at: " + self.datetime)
+        ws.write_string(2, 0, self.file_adrs)
+        
+        col = 0
+        row = 5
+        
+        # Write Business Overview
+        ws.write_string(row, col, "Business Overview", self.fmt_bold)
+        row += 1
+        ws.write_row(row, col, ['주소', ovw.bsns['주소']])
+        row += 1
+        ws.write_row(row, col, ['대지면적', ovw.bsns['대지면적'].m2, ovw.bsns['대지면적'].py], self.fmt_num1)
+        row += 1
+        ws.write_row(row, col, ['건축면적', ovw.bsns['건축면적'].m2, ovw.bsns['건축면적'].py], self.fmt_num1)
+        row += 1
+        ws.write_row(row, col, ['연면적', ovw.bsns['연면적'].m2, ovw.bsns['연면적'].py], self.fmt_num1)
+        row += 1
+        ws.write_row(row, col, ['용적률연면적', ovw.bsns['용적률연면적'].m2, ovw.bsns['용적률연면적'].py], self.fmt_num1)
+        row += 1
+    
+        # Write Area m2
+        row += 3
+        ws.write_string(row, col, "Area Matrix(m2)", self.fmt_bold)
+        row += 1
+        ws.write_column(row+2, col, ovw.aream2.index.get_level_values(0))
+        ws.write_column(row+2, col+1, ovw.aream2.index.get_level_values(1))
+        #ws.write_row(row, col+2, ovw.aream2.columns.get_level_values(0))
+        #ws.write_row(row+1, col+2, ovw.aream2.columns.get_level_values(1))
+        for i, key in enumerate(ovw.aream2.columns):
+            tmp_col = col+2+i
+            ws.write_string(row, tmp_col, key[0])
+            ws.write_string(row+1, tmp_col, key[1])
+            ws.write_column(row+2, tmp_col, ovw.aream2[key].values, self.fmt_num1)
+        row += (len(ovw.aream2.index) + 2)
+        
+        # Write Area py
+        row += 3
+        ws.write_string(row, col, "Area Matrix(py)", self.fmt_bold)
+        row += 1
+        ws.write_column(row+2, col, ovw.areapy.index.get_level_values(0))
+        ws.write_column(row+2, col+1, ovw.areapy.index.get_level_values(1))
+        #ws.write_row(row, col+2, ovw.areapy.columns.get_level_values(0))
+        #ws.write_row(row+1, col+2, ovw.areapy.columns.get_level_values(1))
+        for i, key in enumerate(ovw.areapy.columns):
+            tmp_col = col+2+i
+            ws.write_string(row, tmp_col, key[0])
+            ws.write_string(row+1, tmp_col, key[1])
+            ws.write_column(row+2, tmp_col, ovw.areapy[key].values, self.fmt_num1)
+        row += (len(ovw.areapy.index) + 2)
+    
+    
     def _writecf(self):
         # New Worksheet
         ws = self.wb.add_worksheet("cashflow")
-        ws.write_string(0, 0, "Cash Flow", self.fmt_bold)
+        ws.set_column(0, 0, 12)
+        ws.write_string(0, 0, "CASH FLOW", self.fmt_bold)
+        ws.write_string(1, 0, "Written at: " + self.datetime)
+        ws.write_string(2, 0, self.file_adrs)
+        
         col = 0
-        row = 3
+        row = 5
         
         # Write Index
         ws.write_column(row+2, col, idx.index, self.fmt_date)
@@ -102,6 +167,12 @@ class WriteCF(object):
             ws.write_column(row+2, col, loan[rnk].IR.df.amt_add, self.fmt_num1)
             col += 1
             
+        for rnk in sorted(loan.rnk, reverse=False):
+            if loan[rnk].rate_fob > 0:
+                ws.write_string(row+1, col, "Fob_"+loan[rnk].title, self.fmt_bold)
+                ws.write_column(row+2, col, loan[rnk].fob.df.amt_add, self.fmt_num1)
+                col += 1
+            
         for key, item in cost._dct.items():
             cstlst = cost.lfkey("account", return_val="dict", dct_ipt=item)
             ws.write_string(row, col, item["byname"], self.fmt_bold)
@@ -134,9 +205,12 @@ class WriteCF(object):
     def _writeloan(self):
         # New Worksheet
         ws = self.wb.add_worksheet("loan")
-        ws.write_string(0, 0, "Loan", self.fmt_bold)
+        ws.set_column(0, 0, 12)
+        ws.write_string(0, 0, "LOAN", self.fmt_bold)
+        ws.write_string(1, 0, "Written at: " + self.datetime)
+        ws.write_string(2, 0, self.file_adrs)
         col = 0
-        row = 3
+        row = 6
         
         # Write Index
         ws.write_column(row+2, col, idx.index, self.fmt_date)
@@ -178,6 +252,15 @@ class WriteCF(object):
             ws.write_column(row+2, col, loan[rnk].IR.df.bal_end, self.fmt_num1)
             col += 1
             
+            if loan[rnk].rate_fob > 0:
+                ws.write_string(row, col, "Fob_"+loan[rnk].title, self.fmt_bold)
+                ws.write_string(row+1, col, "amt_add", self.fmt_bold)
+                ws.write_column(row+2, col, loan[rnk].fob.df.amt_add, self.fmt_num1)
+                col += 1
+                ws.write_string(row+1, col, "bal_end", self.fmt_bold)
+                ws.write_column(row+2, col, loan[rnk].fob.df.bal_end, self.fmt_num1)
+                col += 1
+            
             ws.write_string(row, col, "Sum_"+loan[rnk].title, self.fmt_bold)
             ws.write_string(row+1, col, "amt_sub", self.fmt_bold)
             ws.write_column(row+2, col, loan[rnk].df.amt_sub, self.fmt_num1)
@@ -213,18 +296,81 @@ class WriteCF(object):
         
     def _writecst(self):
         # New Worksheet
-        ws = self.wb.add_worksheet("cost")
-        ws.write_string(0, 0, "Cost Balance", self.fmt_bold)
+        ws = self.wb.add_worksheet("fnccst")
+        ws.set_column(0, 1, 16)
+        ws.write_string(0, 0, "Financing and Costs", self.fmt_bold)
+        ws.write_string(1, 0, "Written at: " + self.datetime)
+        ws.write_string(2, 0, self.file_adrs)
         col = 0
-        row = 3
+        row = 5
         ttl_sum = [0, 0, 0, 0]
         
         idx_intl = idx[0]
         idx_loan = slice(idx.loan[0], idx.loan[-1])
         idx_rsrv = slice(idx[-2], idx[-1])
         
+        
+        #### WRITE FINANCING ####
+        ws.write_string(row, col, "FINANCING", self.fmt_bold)
+        row += 1
+        tmp_lst = ["일시대", "한도대", "대출금", "IR", "Fee", "All-in", "FoB", "", "IR_amt", "Fee_amt"]
+        ws.write_row(row, col+2, tmp_lst, self.fmt_bold)
+        row += 1
+        
+        # Write loan
+        ws.write_string(row, col, "Loan", self.fmt_bold)
+        for rnk in sorted(loan.rnk, reverse=False):
+            ws.write_string(row, col+1, loan[rnk].title, self.fmt_bold)
+            ws.write_number(row, col+2, loan[rnk].amt_intl, self.fmt_num1)
+            ws.write_number(row, col+3, loan[rnk].amt_ntnl - loan[rnk].amt_intl, self.fmt_num1)
+            ws.write_number(row, col+4, loan[rnk].amt_ntnl, self.fmt_num1)
+            ws.write_number(row, col+5, loan[rnk].rate_IR, self.fmt_pct)
+            ws.write_number(row, col+6, loan[rnk].rate_fee, self.fmt_pct)
+            ws.write_number(row, col+7, loan[rnk].rate_allin, self.fmt_pct)
+            ws.write_number(row, col+8, loan[rnk].rate_fob, self.fmt_pct)
+            ws.write_number(row, col+10, loan[rnk].amt_IR, self.fmt_num1)
+            ws.write_number(row, col+11, loan[rnk].amt_fee, self.fmt_num1)
+            row += 1
+            
+        # Write sum of loan
+        ws.write_string(row, col+1, "Sum", self.fmt_bold)
+        sumintl = sum([val.amt_intl for val in loan.ttl.dct.values()])
+        sumntnl = sum([val.amt_ntnl for val in loan.ttl.dct.values()])
+        sumrsdl = sumntnl - sumintl
+        ws.write_number(row, col+2, sumintl, self.fmt_num1b)
+        ws.write_number(row, col+3, sumrsdl, self.fmt_num1b)
+        ws.write_number(row, col+4, sumntnl, self.fmt_num1b)
+        ws.write_number(row, col+6, loan.rate_arng, self.fmt_pct)
+        ws.write_number(row, col+7, loan.allin, self.fmt_pct)
+        
+        sumIR = sum([val.amt_IR for val in loan.ttl.dct.values()])
+        sumfee = sum([val.amt_fee for val in loan.ttl.dct.values()])
+        ws.write_number(row, col+10, sumIR, self.fmt_num1b)
+        ws.write_number(row, col+11, sumfee, self.fmt_num1b)
+        row += 1
+        
+        # Write equity
+        ws.write_string(row, col, "Equity", self.fmt_bold)
+        ws.write_number(row, col+2, equity.amt_intl, self.fmt_num1)
+        ws.write_number(row, col+3, equity.amt_ntnl - equity.amt_intl, self.fmt_num1)
+        ws.write_number(row, col+4, equity.amt_ntnl, self.fmt_num1)
+        row += 1
+        
+        # Write total costs
+        ws.write_string(row, col, "Total", self.fmt_bold)
+        ws.write_number(row, col+2, sumintl + equity.amt_intl, self.fmt_num1b)
+        ws.write_number(row, col+3, sumrsdl + equity.amt_ntnl - equity.amt_intl, self.fmt_num1b)
+        ws.write_number(row, col+4, sumntnl + equity.amt_ntnl, self.fmt_num1b)
+        row += 1
+        
+        #### WRITE COSTS ####
+        row += 3
+        ws.write_string(row, col, "COSTS", self.fmt_bold)
+        row += 1
+        
         tmp_txt = ["총금액", "기투입", "PF사업비", "유보사업비"]
-        ws.write_row(row-1, col+2, tmp_txt, self.fmt_bold)
+        ws.write_row(row, col+2, tmp_txt, self.fmt_bold)
+        row += 1
         
         # Write Cashout: Operating Cost
         for key, item in cost._dct.items():
@@ -295,6 +441,19 @@ class WriteCF(object):
             sum_clct = [i + j for i, j in zip(sum_clct, amt_clct)]
             ws.write_row(row, col+2, amt_clct, self.fmt_num1)
             row += 1
+            
+        for rnk in sorted(loan.rnk, reverse=False):
+            if loan[rnk].rate_fob > 0:
+                ws.write_string(row, col+1, "Fob_"+loan[rnk].title, self.fmt_bold)
+                lst_amt = loan[rnk].fob.df.amt_add
+                amt_ttl = sum(lst_amt)
+                amt_intl = lst_amt[idx_intl]
+                amt_loan = sum(lst_amt[idx_loan])
+                amt_rsrv = sum(lst_amt[idx_rsrv])
+                amt_clct = [amt_ttl, amt_intl, amt_loan, amt_rsrv]
+                sum_clct = [i + j for i, j in zip(sum_clct, amt_clct)]
+                ws.write_row(row, col+2, amt_clct, self.fmt_num1)
+                row += 1
                     
         ws.write_string(row, col+1, "sum", self.fmt_bold)
         ws.write_row(row, col+2, sum_clct, self.fmt_num1b)

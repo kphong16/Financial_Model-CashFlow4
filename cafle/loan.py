@@ -55,6 +55,7 @@ class Loan(object):
                  amt_intl = None,
                  rate_fee = 0.0, # float
                  rate_IR = 0.0, # float
+                 rate_fob = 0.0, # float
                  IRcycle = 1, # int, months
                  title = None, # string : "LoanA"
                  rnk = 0, # int
@@ -85,8 +86,10 @@ class Loan(object):
         self.amt_intl = amt_intl
         self.rate_fee = rate_fee
         self.rate_IR = rate_IR
+        self.rate_fob = rate_fob
         self.IRcycle = IRcycle
         self._rate_IR_cycle = rate_IR * self.IRcycle / 12
+        self._rate_fob_cycle = rate_fob * self.IRcycle / 12
             
         # title, rank 입력
         self.title = title
@@ -113,6 +116,7 @@ class Loan(object):
         self.ntnl = Account(self.cindex, self.title, self.tag)
         self.fee = Account(self.cindex, self.title, self.tag)
         self.IR = Account(self.cindex, self.title, self.tag)
+        self.fob = Account(self.cindex, self.title, self.tag)
         
         # Initialize
         self.dct = {}
@@ -141,6 +145,10 @@ class Loan(object):
         self.IR.rate_cycle = self._rate_IR_cycle
         self.IR.amt_cycle = self.ntnl.amt * self.IR.rate_cycle
         self.dct['IR'] = self.IR
+        
+        self.fob.rate = self.rate_fob
+        self.fob.rate_cycle = self._rate_fob_cycle
+        self.dct['fob'] = self.fob
         
     @property
     def _df(self):
@@ -203,6 +211,11 @@ class Loan(object):
         tmp_ntnl = -self.ntnl.bal_strt[idxno]
         tmp_IRamt = tmp_ntnl * self.IR.rate_cycle
         return tmp_IRamt
+        
+    def fobamt_topay(self, idxno):
+        tmp_ntnl = self.ntnl_sub_rsdl(idxno)
+        tmp_fobamt = tmp_ntnl * self.fob.rate_cycle
+        return tmp_fobamt
     #### calculate IR amount to pay ####
     
     
@@ -273,6 +286,12 @@ class Merge_loan(Merge):
         tmp_dct = {key:val.IR for key, val in self.dct.items()}
         rslt_acc = Merge(tmp_dct)
         return rslt_acc
+        
+    @property
+    def fob(self):
+        tmp_dct = {key:val.fob for key, val in self.dct.items()}
+        rslt_acc = Merge(tmp_dct)
+        return rslt_acc    
     
     @property
     def is_repaid(self):
@@ -290,9 +309,11 @@ class Intlz_loan:
                  amt_intl = None,
                  rate_fee = [], # list/float
                  rate_IR = [], # list/float
+                 rate_fob = [], # list/float, fee on balance
                  IRcycle = 1, # int or list / default 1, months
                  tag = None, # string tuple : ("tagA", "tagB")
-                 note = "" # string
+                 note = "", # string
+                 **kwargs
                  ):
         # index 입력
         self.index = index
@@ -306,6 +327,7 @@ class Intlz_loan:
         self.amt_intl = amt_intl
         self.rate_fee = rate_fee
         self.rate_IR = rate_IR
+        self.rate_fob = rate_fob
         
         if is_iterable(IRcycle):
             self.IRcycle = IRcycle
@@ -314,6 +336,7 @@ class Intlz_loan:
         
         self.tag = tag
         self.note = note
+        self.kwargs = kwargs
         
         self.dct = {}
         self._intlz()
@@ -329,12 +352,15 @@ class Intlz_loan:
                              amt_intl = self.amt_intl[i],
                              rate_fee = self.rate_fee[i],
                              rate_IR = self.rate_IR[i],
+                             rate_fob = self.rate_fob[i],
                              IRcycle = self.IRcycle[i],
                              title = self.title[i],
                              rnk = self.rnk[i],
                              tag = self.tag,
                              note = self.note
                              )
+            for key, item in self.kwargs.items():
+                setattr(tmpinstnc, key, item[i])
             self.dct[self.title[i]] = tmpinstnc
             setattr(self, self.title[i], tmpinstnc)
         

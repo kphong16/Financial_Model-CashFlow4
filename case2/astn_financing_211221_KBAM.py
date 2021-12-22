@@ -81,6 +81,7 @@ class Loan(object):
         self.amt_intl   = [     0,    16_000,   24_000]
         self.rate_fee   = [0.020,     0.020,    0.020]
         self.rate_IR    = [0.041,     0.065,    0.090]
+        self.rate_fob   = [0.005,    0.0,  0.0]
         self.rate_arng  =  0.02
         
         self.amt_ttl    = sum(self.amt_ntnl)
@@ -97,7 +98,15 @@ class Loan(object):
                                   amt_ntnl  = self.amt_ntnl,
                                   amt_intl  = self.amt_intl,
                                   rate_fee  = self.rate_fee,
-                                  rate_IR   = self.rate_IR)
+                                  rate_IR   = self.rate_IR,
+                                  rate_fob  = self.rate_fob,
+                                  amt_fee   = self.amt_fee,
+                                  amt_IR    = self.amt_IR,
+                                  rate_allin= self.rate_allin)
+        self.loan.rate_arng     = self.rate_arng
+        self.loan.amt_ttl       = self.amt_ttl
+        self.loan.amt_arng      = self.amt_arng
+        self.loan.allin         = self.allin
         
         
 class FncCst(object):
