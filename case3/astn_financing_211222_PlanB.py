@@ -230,9 +230,9 @@ class FncCst(object):
 #### BRIDGE LOAN ####
 class BrgL(object):
     def __init__(self, fnc_idx):
-        self.fnc_idx = fnc_idx
-        self.idx = fnc_idx.idx
-        self.mtrt = fnc_idx.mtrt
+        self.fnc_idx    = fnc_idx
+        self.idx        = fnc_idx.idx
+        self.mtrtbrg    = fnc_idx.mtrtbrg
         self._input_initial_data()
         
     ########################################
@@ -254,10 +254,10 @@ class BrgL(object):
         self.amt_IR     = [IR * amt for IR, amt in zip(self.rate_IR, self.amt_ntnl)]
         self.amt_arng   = self.amt_ttl * self.rate_arng
         
-        self.rate_allin = [fee/self.mtrt*12 + IR for fee, IR in zip(self.rate_fee, self.rate_IR)]
-        self.allin      = (sum(self.amt_IR) + (sum(self.amt_fee) + self.amt_arng) * 12 / self.mtrt)/self.amt_ttl
+        self.rate_allin = [fee/self.mtrtbrg*12 + IR for fee, IR in zip(self.rate_fee, self.rate_IR)]
+        self.allin      = (sum(self.amt_IR) + (sum(self.amt_fee) + self.amt_arng) * 12 / self.mtrtbrg)/self.amt_ttl
                            
-        self.loan = cf.Intlz_loan(self.idx, self.idx.loan,
+        self.loan = cf.Intlz_loan(self.idx, self.idx.brdg,
                                   title     = self.title,
                                   rnk       = self.rnk,
                                   amt_ntnl  = self.amt_ntnl,

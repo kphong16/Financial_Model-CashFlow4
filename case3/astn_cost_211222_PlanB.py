@@ -41,7 +41,7 @@ class Cost(object):
         _ipt = {"title"       : tmpNH+"_"+tmpNL,
                 "byname"      : "용지매입비",
                 "amtttl"      : 14_500,
-                "scddidx"     : [idx.prjt[0],   idx.loan[0]],
+                "scddidx"     : [idx.prjt[0],   idx.brdg[0]],
                 "scddamt"     : [1_000,         13_500]}
         getattr(self, tmpNH)[tmpNL] = _ipt
         setattr(self, tmpNL, getattr(self, tmpNH)[tmpNL])
@@ -59,7 +59,7 @@ class Cost(object):
                 "amtbase"     : self.prchs["amtttl"],
                 "ratebase"    : 0.009,
                 "amtintl"     : 39,
-                "scddidx"     : [idx.prjt[0], idx.loan[0]]}
+                "scddidx"     : [idx.prjt[0], idx.brdg[0]]}
         getattr(self, tmpNH)[tmpNL] = _ipt
         setattr(self, tmpNL, getattr(self, tmpNH)[tmpNL])
         tmp = getattr(self, tmpNL)
@@ -79,7 +79,7 @@ class Cost(object):
                 "amtbase"       : self.prchs["amtttl"],
                 "매입률"          : 0.045,
                 "본인부담률"       : 0.055,
-                "scddidx"       : [idx.loan[0]]}
+                "scddidx"       : [idx.brdg[0]]}
         getattr(self, tmpNH)[tmpNL] = _ipt
         setattr(self, tmpNL, getattr(self, tmpNH)[tmpNL])
         tmp = getattr(self, tmpNL)
@@ -98,7 +98,7 @@ class Cost(object):
                 "byname"        : "법무사비용",
                 "amtbase"       : self.prchs["amtttl"],
                 "ratebase"      : 0.001,
-                "scddidx"       : [idx.loan[0]]}
+                "scddidx"       : [idx.brdg[0]]}
         getattr(self, tmpNH)[tmpNL] = _ipt
         setattr(self, tmpNL, getattr(self, tmpNH)[tmpNL])
         tmp = getattr(self, tmpNL)
@@ -119,7 +119,7 @@ class Cost(object):
                 "취득세율"        : 0.040,
                 "농특세율"        : 0.002,
                 "교육세율"        : 0.004,
-                "scddidx"       : [idx.loan[0]]}
+                "scddidx"       : [idx.brdg[0]]}
         getattr(self, tmpNH)[tmpNL] = _ipt
         setattr(self, tmpNL, getattr(self, tmpNH)[tmpNL])
         tmp = getattr(self, tmpNL)
