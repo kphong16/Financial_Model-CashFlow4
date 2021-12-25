@@ -43,4 +43,4 @@ class Acc(object):
         _ipt = {"title"         : "fund",
                 "byname"        : "펀드계좌"}
         self._dct["fund"] = _ipt
-        self.repay = Account(idx, self._dct["fund"]["title"])
+        self.fund = Account(idx, self._dct["fund"]["title"])

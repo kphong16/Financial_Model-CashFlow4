@@ -14,7 +14,7 @@ import json
 from .genfunc import *
 from .index import Index, PrjtIndex
 
-__all__ = ['Account', 'Merge', 'Collect', 'Intlz_accounts']
+__all__ = ['Account', 'Merge', 'Collect', 'Intlz_accounts', 'set_acc', 'set_once', 'set_scdd']
 
 class Account(object):
     """
@@ -325,6 +325,44 @@ class Account(object):
         self.subamt(index, amt, account.title, note)
         account.addamt(index, amt, self.title, note)
     #### ACCOUNT TRANSFER ####
+    
+    
+#### SET DATA ####
+class set_basic_data_decorator():
+    def __call__(self, cls):
+        def init(self, sprcls, title, byname=None, idx=None, **kwargs):
+            self.sprcls = sprcls
+            if title not in sprcls._dct:
+                sprcls._dct[title] = self
+                setattr(sprcls, title, self)
+                self.title = title
+                self.idx = idx
+                self.byname = byname
+                self._dct = {}
+                self.acc = Account(idx, title)
+            self.kwargs = kwargs
+            for key, item in kwargs.items():
+                setattr(self, key, item)
+            self.istc = getattr(self.sprcls, title)
+            self._initialize()
+        cls.__init__ = init
+        return cls
+
+@set_basic_data_decorator()
+class set_acc:
+    def _initialize(self):
+        pass
+
+@set_basic_data_decorator()
+class set_once:
+    def _initialize(self):
+        self.istc.acc.addscdd(self.scddidx, self.amtttl)
+
+@set_basic_data_decorator()
+class set_scdd:
+    def _initialize(self):
+        self.istc.acc.addscdd(self.scddidx, self.scddamt)
+#### SET DATA ####
 
 
 class Merge(object):

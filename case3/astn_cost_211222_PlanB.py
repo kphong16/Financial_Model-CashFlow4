@@ -159,7 +159,7 @@ class Cost(object):
         tmp["account"] = Account(idx, tmp["title"])
         tmp["account"].addscdd(idx.prjt[0], tmp["amtintl"])
         tmp["account"].addscdd(tmp["scddidx"], _unitamt)
-        tmp["account"].addscdd(idx.prjt[-1], tmp["amtrttn"])
+        tmp["account"].addscdd(idx.prjt[-2], tmp["amtrttn"])
         del tmp
         
         
@@ -291,7 +291,7 @@ class Cost(object):
         _ipt = {"title"         : tmpNH+"_"+tmpNL,
                 "byname"        : "매각컨설팅수수료",
                 "amtbase"       : 125_000,
-                "ratebase"      : 0.008,
+                "ratebase"      : 0.0, #0.008,
                 "scddidx"       : [idx.loan[0]]}
         getattr(self, tmpNH)[tmpNL] = _ipt
         setattr(self, tmpNL, getattr(self, tmpNH)[tmpNL])
