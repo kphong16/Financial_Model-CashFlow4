@@ -28,4 +28,10 @@ class Acc(object):
         self._dct["oprtg"] = _ipt
         self.oprtg = Account(idx, self._dct["oprtg"]["title"])
         
+        ## Repayment Account ##
+        _ipt = {"title"         : "repay",
+                "byname"        : "상환계좌"}
+        self._dct["repay"] = _ipt
+        self.repay = Account(idx, self._dct["repay"]["title"])
+
         

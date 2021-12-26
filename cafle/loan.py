@@ -375,3 +375,5 @@ class Intlz_loan:
                     return item
         if type(val) is str:
             return getattr(self, val)
+            
+   

@@ -26,6 +26,11 @@ class Cost(object):
         self._dct = {}
         self._set_initial_data()
     
+    @property
+    def mrg(self):
+        tmp = {key: item.mrg for key, item in self._dct.items()}
+        return cf.Merge(tmp)
+    
     ###################################################################
     #### Input Data                                                ####
     def _set_initial_data(self):
@@ -68,36 +73,7 @@ class Cost(object):
         #########################
         #### Input Tax Costs ####
         cf.set_acc(self, "tax", "제세금", idx)
-        cf.set_once(self.eqmnt, "tax", "제세금", idx, amtttl=6_889, scddidx=idx.cstrn[-1])
+        cf.set_once(self.tax, "tax", "제세금", idx, amtttl=6_889, scddidx=idx.cstrn[-1])
                 
-    
-    #### Input Data                                                ####
-    ###################################################################
-
-    def lfkey(self, key_name, return_val="item", dct_ipt=None):
-        """
-        PARAMETERS
-        - key_name : key name of dictionary which is looking for
-        - return_val : 
-            + "item" : return items of the dictionary
-            + "dict" : return the dictionary itself
-        - dct : dictionary on which key is looking for
-        """
-        lst = []
-        if dct_ipt is None:
-            dct = self._dct
-        else:
-            dct = dct_ipt
-        for key, item in dct.items():
-            if key == key_name:
-                if return_val == "item":
-                    lst.append(item)
-                elif return_val == "dict":
-                    lst.append(dct)
-            if type(item) == dict:
-                tmp_lst = self.lfkey(key_name, return_val=return_val, dct_ipt=item)
-                lst.extend(tmp_lst)
-        return lst
-
-        
+            
 

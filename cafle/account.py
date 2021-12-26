@@ -14,7 +14,7 @@ import json
 from .genfunc import *
 from .index import Index, PrjtIndex
 
-__all__ = ['Account', 'Merge', 'Collect', 'Intlz_accounts', 'set_acc', 'set_once', 'set_scdd']
+__all__ = ['Account', 'Merge', 'Collect', 'Intlz_accounts', 'set_acc', 'set_once', 'set_scdd', 'set_rate']
 
 class Account(object):
     """
@@ -330,7 +330,7 @@ class Account(object):
 #### SET DATA ####
 class set_basic_data_decorator():
     def __call__(self, cls):
-        def init(self, sprcls, title, byname=None, idx=None, **kwargs):
+        def init(self, sprcls, title, byname=None, idx=None, crit="addscdd", **kwargs):
             self.sprcls = sprcls
             if title not in sprcls._dct:
                 sprcls._dct[title] = self
@@ -338,6 +338,7 @@ class set_basic_data_decorator():
                 self.title = title
                 self.idx = idx
                 self.byname = byname
+                self.crit = crit
                 self._dct = {}
                 self.acc = Account(idx, title)
             self.kwargs = kwargs
@@ -345,7 +346,19 @@ class set_basic_data_decorator():
                 setattr(self, key, item)
             self.istc = getattr(self.sprcls, title)
             self._initialize()
+            
+        @property
+        def dctacc(self):
+            tmp = {key: item.acc for key, item in self._dct.items()}
+            return tmp
+        
+        @property
+        def mrg(self):
+            return Merge(self.dctacc)
+            
         cls.__init__ = init
+        cls.mrg = mrg
+        cls.dctacc = dctacc
         return cls
 
 @set_basic_data_decorator()
@@ -356,12 +369,29 @@ class set_acc:
 @set_basic_data_decorator()
 class set_once:
     def _initialize(self):
-        self.istc.acc.addscdd(self.scddidx, self.amtttl)
+        if self.crit == "addscdd":
+            self.istc.acc.addscdd(self.scddidx, self.amtttl)
+        elif self.crit == "subscdd":
+            self.istc.acc.subscdd(self.scddidx, self.amtttl)
 
 @set_basic_data_decorator()
 class set_scdd:
     def _initialize(self):
-        self.istc.acc.addscdd(self.scddidx, self.scddamt)
+        if self.crit == "addscdd":
+            self.istc.acc.addscdd(self.scddidx, self.scddamt)
+        elif self.crit == "subscdd":
+            self.istc.acc.subscdd(self.scddidx, self.scddamt)
+#### SET DATA ####
+
+@set_basic_data_decorator()
+class set_rate:
+    def _initialize(self):
+        scddamt = self.amt * self.rate
+        if self.crit == "addscdd":
+            self.istc.acc.addscdd(self.scddidx, scddamt)
+        elif self.crit == "subscdd":
+            self.istc.acc.subscdd(self.scddidx, scddamt)
+        
 #### SET DATA ####
 
 
