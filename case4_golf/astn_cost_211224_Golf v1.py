@@ -30,6 +30,10 @@ class Cost(object):
     def mrg(self):
         tmp = {key: item.mrg for key, item in self._dct.items()}
         return cf.Merge(tmp)
+        
+    @property
+    def dct(self):
+        return self._dct
     
     ###################################################################
     #### Input Data                                                ####

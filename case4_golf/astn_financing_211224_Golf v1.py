@@ -35,14 +35,15 @@ class Idx(object):
         self.fndprd     = 60
         self.prjt       = self.fndprd + 5
         self.mrtgprd    = self.prjt - 29
-        self.slsprd     = self.prjt - 29
         self.idxname    = ["prjt",    "loan",    "fund",      "cstrn",       "mrtg",       "sales"    ]
         self.start      = ["2022-01", "2022-03", "2022-03",   "2022-05",     "2024-04",    "2024-04"  ]
-        self.periods    = [self.prjt, self.mtrt, self.fndprd, self.cstrnprd, self.mrtgprd, self.slsprd]
+        self.end        = [None,      None,      None,        None,          None,         "2027-06"  ]
+        self.periods    = [self.prjt, self.mtrt, self.fndprd, self.cstrnprd, self.mrtgprd, None       ]
         self.freq       = "M"
         
         self.idx = cf.PrjtIndex(idxname = self.idxname,
                                 start   = self.start,
+                                end     = self.end,
                                 periods = self.periods,
                                 freq    = self.freq)
 
@@ -125,6 +126,10 @@ class FncCst_Loan(object):
     def mrg(self):
         tmp = {key: item.acc for key, item in self._dct.items()}
         return cf.Merge(tmp)
+        
+    @property
+    def dct(self):
+        return self._dct
 
     ########################################
     #### Input Data                     ####
@@ -190,6 +195,10 @@ class FncCst_Fund(object):
     def mrg(self):
         tmp = {key: item.acc for key, item in self._dct.items()}
         return cf.Merge(tmp)
+    
+    @property
+    def dct(self):
+        return self._dct
         
     ########################################
     #### Input Data                     ####
@@ -235,7 +244,7 @@ class Mrtg(object):
         #self.rate_allin = [fee/self.mtrt*12 + IR for fee, IR in zip(self.rate_fee, self.rate_IR)]
         #self.allin      = (sum(self.amt_IR) + (sum(self.amt_fee) + self.amt_arng) * 12 / self.mtrt)/self.amt_ttl
                            
-        self.loan = cf.Intlz_loan(self.idx, self.idx.loan,
+        self.loan = cf.Intlz_loan(self.idx, self.idx.mrtg,
                                   title     = self.title,
                                   rnk       = self.rnk,
                                   amt_ntnl  = self.amt_ntnl,
@@ -257,6 +266,10 @@ class FncCst_Mrtg(object):
         self.fnc_loan = fnc_loan
         self._dct = {}
         self._set_initial_data()
+
+    @property
+    def dct(self):
+        return self._dct
 
     @property
     def mrg(self):

@@ -200,7 +200,7 @@ class Loan(object):
             return
         if -self.ntnl.bal_end[date] > 0:
             return
-        if (self.ntnl.sub_rsdl_cum[date] - self.ntnl.add_rsdl_cum[date]) > 0:
+        if (self.ntnl.sub_rsdl_cum[date] - max(self.ntnl.add_rsdl_cum[date], 0)) > 0:
             return
         self.is_repaid = True
     #### set loan repaid all ####

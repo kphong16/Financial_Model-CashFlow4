@@ -348,6 +348,10 @@ class set_basic_data_decorator():
             self._initialize()
             
         @property
+        def dct(self):
+            return self._dct    
+        
+        @property
         def dctacc(self):
             tmp = {key: item.acc for key, item in self._dct.items()}
             return tmp
@@ -358,6 +362,7 @@ class set_basic_data_decorator():
             
         cls.__init__ = init
         cls.mrg = mrg
+        cls.dct = dct
         cls.dctacc = dctacc
         return cls
 

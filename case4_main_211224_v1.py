@@ -71,21 +71,34 @@ mrtgcst = fnc["mrtgcst"]
 #### Read Sales Data and Create Sales Accounts ####
 sales_mdl = import_module(CASE + ASTNSLS)
 sales_mdl.idx = idx
-sales = sales_mdl.Sales()
+fnc["sales"] = sales_mdl.Sales()
+sales = fnc["sales"]
 
 #### Read Cost Data and Create Cost Accounts ####
 cost_mdl = import_module(CASE + ASTNCST)
 cost_mdl.idx = idx
-cost = cost_mdl.Cost()
+fnc["cost"] = cost_mdl.Cost()
+cost = fnc["cost"]
 
 #### Read Operating Accounts Data and Create ####
 acc_mdl = import_module(CASE + ASTNACC)
 acc_mdl.idx = idx
-acc = acc_mdl.Acc()
+fnc["acc"] = acc_mdl.Acc()
+acc = fnc["acc"]
 
 
 #### Execute Cash Flow ####
 for idxno in idx.index:
+
+    #################
+    #### Sales ####
+    for key, item in sales._dct.items():
+        amt_scdd = item.acc.sub_scdd[idxno]
+        item.acc.send(idxno, amt_scdd, acc.oprtg)
+
+    #################
+    #### PF Loan ####
+
     #### Loans: set loan withdrawble ####
     # If it's initial date then set loans withdrawble.
     equity.set_wtdrbl_intldate(idxno, idx[0])
@@ -95,9 +108,6 @@ for idxno in idx.index:
         loan[rnk].set_wtdrbl_intldate(idxno)
     for rnk in mrtg.rnk:
         mrtg[rnk].set_wtdrbl_intldate(idxno)
-                
-    #################
-    #### PF Loan ####
     
     #### Expected Costs: calculate expected costs and add on add_scdd ####
     # calculate operating costs on add_scdd
@@ -146,12 +156,6 @@ for idxno in idx.index:
                + fncl_fee + fncl_IR + fncl_fob \
                + fund_fee + fund_IR + fund_fob \
                + mrtg_fee + mrtg_IR + mrtg_fob
-    
-    
-    #### Sales ####
-    for key, item in sales._dct.items():
-        amt_scdd = item.acc.sub_scdd[idxno]
-        item.acc.send(idxno, amt_scdd, acc.oprtg)
     
     
     #### Fund and Loans: withdraw cash from fund and loans ####
@@ -252,22 +256,10 @@ for idxno in idx.index:
             acc.oprtg.send(idxno, acc.oprtg.bal_end[idxno], equity.ntnl)
 
 
-"""
 #### Print out the results ####
-rslt_mdl        = import_module(CASE + RESULT)
-rslt_mdl.idx    = idx
-rslt_mdl.equity = equity
-rslt_mdl.brgl   = brgl
-rslt_mdl.loan   = loan
-rslt_mdl.sales  = sales
-rslt_mdl.brgcst = brgcst
-rslt_mdl.fnccst = fnccst
-rslt_mdl.cost   = cost
-rslt_mdl.acc    = acc
-rslt_mdl.ovw    = ovw
-rslt            = rslt_mdl.WriteCF(CASE + PRTNAME)
+rslt_mdl    = import_module(CASE + RESULT)
+rslt        = rslt_mdl.WriteCF(CASE + PRTNAME, fnc)
 
-"""
         
         
         
