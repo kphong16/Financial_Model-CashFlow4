@@ -258,6 +258,7 @@ for idxno in idx.index:
 
 #### Print out the results ####
 rslt_mdl    = import_module(CASE + RESULT)
+
 rslt        = rslt_mdl.WriteCF(CASE + PRTNAME, fnc)
 
         

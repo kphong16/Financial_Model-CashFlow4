@@ -37,8 +37,8 @@ class Idx(object):
         self.mrtgprd    = self.prjt - 29
         self.idxname    = ["prjt",    "loan",    "fund",      "cstrn",       "mrtg",       "sales"    ]
         self.start      = ["2022-01", "2022-03", "2022-03",   "2022-05",     "2024-04",    "2024-04"  ]
-        self.end        = [None,      None,      None,        None,          None,         "2027-06"  ]
-        self.periods    = [self.prjt, self.mtrt, self.fndprd, self.cstrnprd, self.mrtgprd, None       ]
+        self.end        = [None,      None,      None,        None,          "2027-06",    "2027-06"  ]
+        self.periods    = [self.prjt, self.mtrt, self.fndprd, self.cstrnprd, None,         None       ]
         self.freq       = "M"
         
         self.idx = cf.PrjtIndex(idxname = self.idxname,
@@ -169,7 +169,7 @@ class Fund(object):
         self.amt_IR     = [IR * amt for IR, amt in zip(self.rate_IR, self.amt_ntnl)]
         self.amt_arng   = self.amt_ttl * self.rate_arng
                            
-        self.loan = cf.Intlz_loan(self.idx, self.idx.loan,
+        self.loan = cf.Intlz_loan(self.idx, self.idx.fund,
                                   title     = self.title,
                                   rnk       = self.rnk,
                                   amt_ntnl  = self.amt_ntnl,

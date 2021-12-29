@@ -11,6 +11,7 @@ from datetime import datetime
 from cafle import Write
 
 # Get Attributes from Main
+"""
 idx     = None
 equity  = None
 #brgl    = None
@@ -21,6 +22,7 @@ loancst  = None
 cost    = None
 acc     = None
 # ovw     = None
+"""
 
 
 class WriteCF(object):
@@ -39,6 +41,8 @@ class WriteCF(object):
         # New Worksheet
         wb = self.wb
         ws = wb.add_ws("cashflow")
+        
+        # Setting Variables
         idx = self.data["idx"].idx
         oprtg = self.data["acc"].oprtg
         equity = self.data["equity"].equity
@@ -51,6 +55,7 @@ class WriteCF(object):
         sales = self.data["sales"].sales
         cost = self.data["cost"]
         
+        # Write Head
         ws.set_column(0, 0, 12)
         ws.write(0, 0, "CASH FLOW", wb.bold)
         ws.write(1, 0, "Written at: " + wb.now)
@@ -80,9 +85,9 @@ class WriteCF(object):
                                   ),
                   "운영_유입"     : {"현금유입": oprtg.df.amt_add},
                   "조달비용"      : wb.extnddct(
-                                  {item.acc.title: item.acc.df.amt_add for key, item in loancst.dct.items()},
-                                  {item.acc.title: item.acc.df.amt_add for key, item in mrtgcst.dct.items()},
-                                  {item.acc.title: item.acc.df.amt_add for key, item in fundcst.dct.items()}
+                                  {"Loan_"+item.acc.title: item.acc.df.amt_add for key, item in loancst.dct.items()},
+                                  {"Mrtg_"+item.acc.title: item.acc.df.amt_add for key, item in mrtgcst.dct.items()},
+                                  {"Fund_"+item.acc.title: item.acc.df.amt_add for key, item in fundcst.dct.items()}
                                   ),
                   "금융비용"      : wb.extnddct(
                                   {"Fee_"+key: item.fee.df.amt_add for key, item in loan.dct.items()},
@@ -109,27 +114,13 @@ class WriteCF(object):
                   "운영_기말"  : {"기말잔액" : oprtg.df.bal_end}
                   }
                  )
+        
+        # Write Dictionary
         wb.write_dct_col("cashflow", row, col, tmpdct, tmpfmt)
         
         
         
     """ 
-        # Write FundAcc Balance_end
-        col += 1
-        ws.write_string(row, col, "펀드계좌", self.fmt_bold)
-        ws.write_string(row+1, col, "기초잔액", self.fmt_bold)
-        ws.write_column(row+2, col, acc.oprtg.df.bal_strt, self.fmt_num1b)
-        col += 1
-        ws.write_string(row+1, col, "현금유입", self.fmt_bold)
-        ws.write_column(row+2, col, acc.oprtg.df.amt_add, self.fmt_num1b)
-        col += 1
-        ws.write_string(row+1, col, "현금유출", self.fmt_bold)
-        ws.write_column(row+2, col, acc.oprtg.df.amt_sub, self.fmt_num1b)
-        col += 1
-        ws.write_string(row+1, col, "기말잔액", self.fmt_bold)
-        ws.write_column(row+2, col, acc.oprtg.df.bal_end, self.fmt_num1b)
-        col += 1
-        
         
     def _writeloan(self):
         # New Worksheet
