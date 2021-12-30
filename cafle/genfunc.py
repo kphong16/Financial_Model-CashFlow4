@@ -8,6 +8,7 @@ from datetime import timedelta
 
 
 PY = 1/3.305785
+# PY("pyung") is the area unit used in Korea.
 class Area:
     def __init__(self, m2=None, py=None, roundunit=2):
         self.m2 = m2
