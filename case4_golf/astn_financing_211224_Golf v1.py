@@ -65,6 +65,7 @@ class Equity(object):
         self.amt_intl = 0
         
         self.equity = cf.Loan(self.idx,
+                              title    = "equity",
                               amt_ntnl = self.amt_ntnl,
                               amt_intl = self.amt_intl)
         

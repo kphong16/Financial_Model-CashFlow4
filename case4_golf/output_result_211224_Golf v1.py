@@ -32,11 +32,12 @@ class WriteCF(object):
         self.wb         = Write(file_adrs)
         
         self._writecf()
-        #self._writeloan()
+        self._writeloan()
         #self._writecst()
         
         self.wb.close()
         
+    #### Write Cashflow ####
     def _writecf(self):
         # New Worksheet
         wb = self.wb
@@ -114,84 +115,60 @@ class WriteCF(object):
                   "운영_기말"  : {"기말잔액" : oprtg.df.bal_end}
                   }
                  )
+                 
         
         # Write Dictionary
         wb.write_dct_col("cashflow", row, col, tmpdct, tmpfmt)
         
-        
-        
-    """ 
-        
+    
+    #### Write Loan ####
     def _writeloan(self):
         # New Worksheet
-        ws = self.wb.add_worksheet("loan")
+        wb = self.wb
+        ws = wb.add_ws("financing")
+        
+        # Setting Variables
+        idx = self.data["idx"].idx
+        oprtg = self.data["acc"].oprtg
+        equity = self.data["equity"].equity
+        fund = self.data["fund"].loan
+        fundcst = self.data["fundcst"]
+        loan = self.data["loan"].loan
+        loancst = self.data["loancst"]
+        mrtg = self.data["mrtg"].loan
+        mrtgcst = self.data["mrtgcst"]
+        sales = self.data["sales"].sales
+        cost = self.data["cost"]
+        
+        # Write Head
         ws.set_column(0, 0, 12)
-        ws.write_string(0, 0, "LOAN", self.fmt_bold)
-        ws.write_string(1, 0, "Written at: " + self.datetime)
-        ws.write_string(2, 0, self.file_adrs)
+        ws.write(0, 0, "FINANCING", wb.bold)
+        ws.write(1, 0, "Written at: " + wb.now)
+        ws.write(2, 0, self.file_adrs)
+        
+        row = 5
         col = 0
-        row = 6
         
         # Write Index
-        ws.write_column(row+2, col, idx.index, self.fmt_date)
-        col += 1
+        ws.write_column(row+3, col, idx.index, wb.date)
+        col += 1    
         
         
-        for rnk in sorted(brgl.rnk, reverse=False):
-            ws.write_string(row-1, col, "BrgL_"+brgl[rnk].title, self.fmt_bold)
-            ws.write_string(row, col, "Notional_"+brgl[rnk].title, self.fmt_bold)
-            ws.write_string(row+1, col, "sub_scdd", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].ntnl.df.sub_scdd, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "add_scdd", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].ntnl.df.add_scdd, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "amt_sub", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].ntnl.df.amt_sub, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "amt_add", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].ntnl.df.amt_add, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "bal_end", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].ntnl.df.bal_end, self.fmt_num1)
-            col += 1
-    
-            ws.write_string(row, col, "Fee_"+brgl[rnk].title, self.fmt_bold)
-            ws.write_string(row+1, col, "amt_add", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].fee.df.amt_add, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "bal_end", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].fee.df.bal_end, self.fmt_num1)
-            col += 1
-            
-            ws.write_string(row, col, "IR_"+brgl[rnk].title, self.fmt_bold)
-            ws.write_string(row+1, col, "amt_add", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].IR.df.amt_add, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "bal_end", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].IR.df.bal_end, self.fmt_num1)
-            col += 1
-            
-            if brgl[rnk].rate_fob > 0:
-                ws.write_string(row, col, "Fob_"+brgl[rnk].title, self.fmt_bold)
-                ws.write_string(row+1, col, "amt_add", self.fmt_bold)
-                ws.write_column(row+2, col, brgl[rnk].fob.df.amt_add, self.fmt_num1)
-                col += 1
-                ws.write_string(row+1, col, "bal_end", self.fmt_bold)
-                ws.write_column(row+2, col, brgl[rnk].fob.df.bal_end, self.fmt_num1)
-                col += 1
-            
-            ws.write_string(row, col, "Sum_"+brgl[rnk].title, self.fmt_bold)
-            ws.write_string(row+1, col, "amt_sub", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].df.amt_sub, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "amt_add", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].df.amt_add, self.fmt_num1)
-            col += 1
-            ws.write_string(row+1, col, "bal_end", self.fmt_bold)
-            ws.write_column(row+2, col, brgl[rnk].df.bal_end, self.fmt_num1)
-            col += 1
+        tmpfmt = [wb.bold, wb.bold, wb.bold, wb.num]
+        tmpdct = {}
+        # Write Loan
+        for rnk in sorted(loan.rnk, reverse=False):
+            tmpdct["Loan_"+loan[rnk].title] = wb.dct_loan(loan[rnk])
+        # Write Fund
+        for rnk in sorted(fund.rnk, reverse=False):
+            tmpdct["Fund_"+fund[rnk].title] = wb.dct_loan(fund[rnk])
+        # Write Equity
+        tmpdct["Equity_"+equity.title] = wb.dct_loan(equity)
         
+        # Write Dictionary
+        wb.write_dct_col("financing", row, col, tmpdct, tmpfmt)
+
+    """         
         
         # Write Loan
         for rnk in sorted(loan.rnk, reverse=False):

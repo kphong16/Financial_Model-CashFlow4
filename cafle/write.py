@@ -95,19 +95,28 @@ class Write(object):
                 col = self.write_dct_col(wsname, row+1, col, item, fmtlst[1:])
         return col
     
-    
-    """
-    def write_dct(self, wsname, row, col, dct, fmtk=None, fmtv=None, drtn="column"):
-        for key, item in dct.items():
-            if drtn == "column":
-                self.write(wsname, row, col, key, fmtk)
-                self.write_col(wsname, row+1, col, item, fmtv)
-                col += 1
-            elif drtn == "row":
-                self.write(wsname, row, col, key, fmtk)
-                self.write_row(wsname, row, col+1, item, fmtv)
-                row += 1
-    """
+    # Make Dictionary of Loan
+    def dct_loan(self, ln):
+        tmpdct = {}
+        tmpdct["Notional_" + ln.title] = \
+            {"sub_scdd": ln.ntnl.df.sub_scdd,
+             "add_scdd": ln.ntnl.df.add_scdd,
+             "amt_sub" : ln.ntnl.df.amt_sub,
+             "amt_add" : ln.ntnl.df.amt_add,
+             "bal_end" : ln.ntnl.df.bal_end}
+        if ln.rate_fee > 0:
+            tmpdct["Fee_" + ln.title] = \
+                {"amt_add" : ln.fee.df.amt_add,
+                 "bal_end" : ln.fee.df.bal_end}
+        tmpdct["IR_" + ln.title] = \
+            {"amt_add" : ln.IR.df.amt_add,
+             "bal_end" : ln.IR.df.bal_end}
+        if ln.rate_fob > 0:
+            tmpdct["Fob_" + ln.title] = \
+                {"amt_add" : ln.fob.df.amt_add,
+                 "bal_end" : ln.fob.df.bal_end}
+        return tmpdct
+
         
     # Write Val
     def write(self, wsname, row, col, val, fmt=None):
