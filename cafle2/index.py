@@ -87,7 +87,8 @@ class Index(object):
         
         Parameters
         ----------
-        val: int, slice, date, ex) 0, 1:3, datetime.date(2021, 4, 30)
+        val: int, slice, date, date like string, 
+            ex) 0, 1:3, datetime.date(2021, 4, 30), "2021-04", "2021-04-30"
         
         Return
         ------
