@@ -31,7 +31,7 @@ from functools import wraps
 from .genfunc import *
 from .index import Index, PrjtIndex
 
-__all__ = ['Account',
+__all__ = ['Account', 'Merge',
            'set_acc', 'set_once', 'set_scd', 'set_rate']
 
 class Account(object):
@@ -499,6 +499,11 @@ class set_initial_account_decorator():
             if "_dct" not in sprcls.__dict__:
                 sprcls._dct = {}
                 sprcls.dct = sprcls._dct
+                
+                @property
+                def mrg(self):
+                    return Merge(sprcls.dct)
+                sprcls.mrg = mrg
             
             if title not in sprcls._dct:
                 acc = Account(idx, title)
@@ -507,7 +512,6 @@ class set_initial_account_decorator():
                 self.acc = acc
                 
                 acc.byname = byname
-                acc._dct = {}
                 
                 self.crit = crit
                 self.kwargs = kwargs
@@ -518,16 +522,6 @@ class set_initial_account_decorator():
             self._initialize()
         cls.__init__ = init
         
-        @property
-        def dct(self):
-            return self._dct
-        cls.dct = dct
-
-        @property
-        def mrg(self):
-            return Merge(self.dct)
-        cls.mrg = mrg
-        
         return cls
 
         
@@ -535,7 +529,7 @@ class set_initial_account_decorator():
 class set_acc:
     """
     Set initial account. 
-    Create an account and 
+    Create and initiaize an account.
     
     Parameters
     ----------
@@ -544,14 +538,39 @@ class set_acc:
     byname : a second name of the account
     idx : index, default None
     crit : str, default "addscd"
+    
+    Returns
+    -------
+    
     init(self, sprcls, title, byname=None, idx=None, crit="addscd",
-                 **kwargs
+         **kwargs: None)
     """
     def _initialize(self):
         pass
         
 @set_initial_account_decorator()
 class set_once:
+    """
+    Set initial account. 
+    Create and initiaize an account.
+    Input a data(one scheduel, one amount).
+    
+    Parameters
+    ----------
+    sprcls : an account on a higher level
+    title : a name of the account
+    byname : a second name of the account
+    idx : index, default None
+    crit : str, default "addscd" or "subscd"
+    scdidx : a schedule index
+    amtttl : an amount to input on
+    
+    Returns
+    -------
+    
+    init(self, sprcls, title, byname=None, idx=None, crit="addscd",
+         **kwargs: amtttl, scdidx)
+    """
     def _initialize(self):
         if self.crit == "addscd":
             self.acc.addscd(self.scdidx, self.amtttl)
@@ -560,6 +579,27 @@ class set_once:
             
 @set_initial_account_decorator()
 class set_scd:
+    """
+    Set initial account. 
+    Create and initiaize an account.
+    Input a data(scheduel list, amount list).
+    
+    Parameters
+    ----------
+    sprcls : an account on a higher level
+    title : a name of the account
+    byname : a second name of the account
+    idx : index, default None
+    crit : str, default "addscd" or "subscd"
+    scdidx : a schedule index list
+    scdamt : an amount list to input on
+    
+    Returns
+    -------
+    
+    init(self, sprcls, title, byname=None, idx=None, crit="addscd", 
+         **kwargs: scdamt, scdidx)
+    """
     def _initialize(self):
         if self.crit == "addscd":
             self.acc.addscd(self.scdidx, scdamt)
@@ -568,6 +608,27 @@ class set_scd:
         
 @set_initial_account_decorator()
 class set_rate:
+    """
+    Set initial account. 
+    Create and initiaize an account.
+    Input a data(scheduel list, amount list).
+    
+    Parameters
+    ----------
+    sprcls : an account on a higher level
+    title : a name of the account
+    byname : a second name of the account
+    idx : index, default None
+    crit : str, default "addscd" or "subscd"
+    scdidx : a schedule index
+    amt : an amount to apply a rate on
+    rate : a rate to apply to an amt
+    
+    Returns
+    -------
+    init(self, sprcls, title, byname=None, idx=None, crit="addscd", 
+         **kwargs: amt, rate, scdidx)
+    """
     def _initialize(self):
         scdamt = self.amt * self.rate
         if self.crit == "addscd":
@@ -577,13 +638,168 @@ class set_rate:
         
         
 class Merge(object):
-    pass
+    def __init__(self, dct:dict):
+        self._dct = dct
+        self._set_mainidx()
+        self._set_outputfunc()
         
+    @property
+    def _df(self):
+        dflst = [self._adjust_idx(item._df) for key, item in self._dct.items()]
+        return sum(dflst)
         
+    @property
+    def df(self):
+        dflst = [self._adjust_idx(item.df) for key, item in self._dct.items()]
+        return sum(dflst)
         
+    @property
+    def dct(self):
+        return self._dct
         
+    @property
+    def title(self):
+        dfdct = Series({key: item.title for key, item in self._dct.items()})
+        return dfdct
         
+    def __getattr__(self, attr):
+        return [item.__dict__[attr] for key, item in self._dct.items()]
         
+    def _set_mainidx(self):
+        mainidx = []
+        for key, item in self._dct.items():
+            if len(item.cindex) > len(mainidx):
+                mainidx = item.cindex
+        self.cindex = mainidx
+        self.index = self.cindex.arr
+        
+    def _adjust_idx(self, tmpdf):
+        if len(tmpdf.index) < len(self.cindex):
+            return DataFrame(tmpdf, index=self.index).fillna(0)
+        return tmpdf
+        
+    class getattr_dfcol:
+        """
+        Decorator
+        Get a class name and use the class name as the column of dataframe.
+        """
+        def __call__(self, cls):
+            def init(self, spristnc):
+                self.spristnc = spristnc
+                self.colname = cls.__name__
+            cls.__init__ = init
+            
+            def getitem(self, val):
+                """
+                If val is an integer, return the data which is in index[val].
+                If val is a date, return the data which is on the date.
+                If val is a string, get the date data and return the data 
+                    which is on the date.
+                
+                Parameters
+                ----------
+                val: int, slice, date, date like string, 
+                    ex) 0, 1:3, datetime.date(2021, 4, 30), "2021-04", "2021-04-30"
+                
+                Return
+                ------
+                data from dataframe
+                Array of data from dataframe
+                
+                Examples
+                --------
+                >>> idx = Index("2021.01", "2021.12")
+                >>> acc = Account(idx, "loan")
+                >>> acc.addscd(idx[0], 1000)
+                >>> acc.subscd(idx[5], 800)
+                >>> acc.addamt(idx[1], 500, "acc_oprtg", "amount acc oprtg")
+                >>> acc.scd_in[idx[3]]
+                    0.0
+                >>> acc.scd_in[3]
+                    0.0
+                >>> acc.scd_in[0:3]
+                    2021-01-31    1000.0
+                    2021-02-28       0.0
+                    2021-03-31       0.0
+                    Name: scd_in, dtype: float64
+                >>> acc.scd_in[datetime.date(2021, 3, 31)]
+                    0.0
+                >>> acc.scd_in["2021.04"]
+                    2021-04-30    0.0
+                    Name: scd_in, dtype: float64
+                >>> acc.scd_in["2021"]
+                    2021-01-31    1000.0
+                    2021-02-28       0.0
+                    2021-03-31       0.0
+                    2021-04-30       0.0
+                    2021-05-31       0.0
+                    2021-06-30       0.0
+                    2021-07-31       0.0
+                    2021-08-31       0.0
+                    2021-09-30       0.0
+                    2021-10-31       0.0
+                    2021-11-30       0.0
+                    Name: scd_in, dtype: float64
+                """
+                if isinstance(val, date):
+                    return self.spristnc._df.loc[val, self.colname]
+                val = self.spristnc.cindex[val]
+                return self.spristnc._df.loc[val, self.colname]
+            cls.__getitem__ = getitem
+            
+            return cls
+        
+    @getattr_dfcol()
+    class scd_in:
+        pass
+    @getattr_dfcol()
+    class scd_in_cum:
+        pass
+    @getattr_dfcol()
+    class scd_out:
+        pass
+    @getattr_dfcol()
+    class scd_out_cum:
+        pass
+    @getattr_dfcol()
+    class bal_strt:
+        pass
+    @getattr_dfcol()
+    class amt_in:
+        pass
+    @getattr_dfcol()
+    class amt_in_cum:
+        pass
+    @getattr_dfcol()
+    class amt_out:
+        pass
+    @getattr_dfcol()
+    class amt_out_cum:
+        pass
+    @getattr_dfcol()
+    class bal_end:
+        pass
+    @getattr_dfcol()
+    class rsdl_in_cum:
+        pass
+    @getattr_dfcol()
+    class rsdl_out_cum:
+        pass
+        
+    def _set_outputfunc(self):
+        self.scd_in = self.scd_in(self)
+        self.scd_in_cum = self.scd_in_cum(self)
+        self.scd_out = self.scd_out(self)
+        self.scd_out_cum = self.scd_out_cum(self)
+        self.bal_strt = self.bal_strt(self)
+        self.amt_in = self.amt_in(self)
+        self.amt_in_cum = self.amt_in_cum(self)
+        self.amt_out = self.amt_out(self)
+        self.amt_out_cum = self.amt_out_cum(self)
+        self.bal_end = self.bal_end(self)
+        self.rsdl_in_cum = self.rsdl_in_cum(self)
+        self.rsdl_out_cum = self.rsdl_out_cum(self)
+
         
         
         

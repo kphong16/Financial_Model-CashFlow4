@@ -170,7 +170,7 @@ class Index(object):
         isday = _getblnloc(self.day, day)
         
         return isyear & ismonth & isday
-        
+                
     def noloc(self, year=None, month=None, day=None):
         """
         Check data(year, month, day) is in the array and return the index number array result.
