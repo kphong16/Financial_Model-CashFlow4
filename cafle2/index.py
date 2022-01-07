@@ -60,6 +60,12 @@ class Index(object):
         the index number array.
     valloc : Check data(year, month, day) is in the array and return
         the date object array.
+        
+    Todos
+    -----
+    
+    
+    
     """
     
     def __init__(self, start    = None,
@@ -219,6 +225,15 @@ class Index(object):
         """
         tmpno = self.noloc(year, month, day)
         return self[tmpno]
+        
+    def __repr__(self):
+        """
+        Return a string representation for this object.
+        """
+        name = type(self).__name__
+        data = self.arr
+        return f"{name},\n{data}"
+        
         
 def strpdate(arg):
     if "-" in arg:
@@ -535,5 +550,9 @@ class PrjtIndex(object):
         """
         return self.main.valloc(year, month, day)
 
-
+    def __repr__(self):
+        """
+        Return a string representation for this object.
+        """
+        return f"Indexes: {self._idxname}\nMain: {self._idxname[self._mainidxno]}\n{self.arr}"
 

@@ -44,8 +44,7 @@ class Account(object):
     
     Attributes
     ----------
-    cindex : index class
-    index : index array
+    index : index class
     title : str, name of account
     balstrt : start balance of account
     DFCOL : columns of the dataframe
@@ -94,13 +93,10 @@ class Account(object):
                  title=None,
                  balstrt=0
                  ):
-        
         if isinstance(index, Index):
-            self.cindex = index
-            self.index = index.arr
+            self.index = index
         elif isinstance(index, PrjtIndex):
-            self.cindex = index.main
-            self.index = index.arr
+            self.index = index.main
             
         self.title = title
         self.balstrt = balstrt
@@ -108,17 +104,16 @@ class Account(object):
         self._intlz()
         
     def _intlz(self):
+        # Initial Setting Function
+        self.DFCOL = ['scd_in', 'scd_in_cum', 'scd_out', 'scd_out_cum', 
+                      'bal_strt', 'amt_in', 'amt_in_cum', 
+                      'amt_out', 'amt_out_cum', 'bal_end',
+                      'rsdl_in_cum', 'rsdl_out_cum']
+        self.DFCOL_smry = ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
+        self.JNLCOL = ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
         self._setdf()
         self._setjnl()
         self._set_outputfunc()
-        
-    # Initial Setting Function
-    DFCOL = ['scd_in', 'scd_in_cum', 'scd_out', 'scd_out_cum', 
-             'bal_strt', 'amt_in', 'amt_in_cum', 
-             'amt_out', 'amt_out_cum', 'bal_end',
-             'rsdl_in_cum', 'rsdl_out_cum']
-    DFCOL_smry = ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
-    JNLCOL = ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
     
     def _setdf(self):
         # Initialize DataFrame
@@ -394,7 +389,7 @@ class Account(object):
                 """
                 if isinstance(val, date):
                     return self.spristnc._df.loc[val, self.colname]
-                val = self.spristnc.cindex[val]
+                val = self.spristnc.index[val]
                 return self.spristnc._df.loc[val, self.colname]
             cls.__getitem__ = getitem
             
@@ -489,6 +484,15 @@ class Account(object):
         if isinstance(index, int): index = self.index[index]
         self.subamt(index, amt, account.title, note)
         account.addamt(index, amt, self.title, note)
+        
+    def __repr__(self):
+        """Return a string representation for this object."""
+        if len(self.df) > 15:
+            repr_df = f"{self.df.head(5)}\n...\n{self.df.tail(5)}"
+        else:
+            repr_df = f"{self.df}"
+        repr = f"<{self.title}>\n" + repr_df
+        return repr
         
 
 class set_initial_account_decorator():
@@ -668,13 +672,13 @@ class Merge(object):
     def _set_mainidx(self):
         mainidx = []
         for key, item in self._dct.items():
-            if len(item.cindex) > len(mainidx):
-                mainidx = item.cindex
-        self.cindex = mainidx
-        self.index = self.cindex.arr
+            if len(item.index) > len(mainidx):
+                mainidx = item.index
+        self.index = mainidx
+        self.index = self.index.arr
         
     def _adjust_idx(self, tmpdf):
-        if len(tmpdf.index) < len(self.cindex):
+        if len(tmpdf.index) < len(self.index):
             return DataFrame(tmpdf, index=self.index).fillna(0)
         return tmpdf
         
@@ -743,7 +747,7 @@ class Merge(object):
                 """
                 if isinstance(val, date):
                     return self.spristnc._df.loc[val, self.colname]
-                val = self.spristnc.cindex[val]
+                val = self.spristnc.index[val]
                 return self.spristnc._df.loc[val, self.colname]
             cls.__getitem__ = getitem
             
@@ -800,7 +804,18 @@ class Merge(object):
         self.rsdl_in_cum = self.rsdl_in_cum(self)
         self.rsdl_out_cum = self.rsdl_out_cum(self)
 
+    def __repr__(self):
+        """Return a string representation for this object."""
+        repr_key = []
+        for key in self.dct.keys():
+            repr_key.append(key)
         
+        if len(self.df) > 15:
+            repr_df = f"{self.df.head(5)}\n...\n{self.df.tail(5)}"
+        else:
+            repr_df = f"{self.df}"
+        repr = f"Accounts: {repr_key}\n" + repr_df
+        return repr
         
         
         
