@@ -1,40 +1,95 @@
-import pandas as pd
-import numpy as np
-import math
-from pandas import Series, DataFrame
-from pandas.tseries.offsets import Day, MonthEnd
-from datetime import datetime
-from datetime import timedelta
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Written by KP_Hong <kphong16@daum.net>
+2021, KP_Hong
 
+General functions for cafle.
+
+Attributes
+----------
+PY : the area unit used in Korea
+
+Modules
+-------
+Area : transform between m2 and PY units. 
+"""
+
+import math
+from datetime import datetime
+from pandas.api.types import is_numeric_dtype
+
+__all__ = ['PY', 'Area', 'EmptyClass', 'is_iterable', 'limited', 'rounding', 
+           'print_rounding', 'round_up', 'log10']
 
 PY = 1/3.305785
 # PY("pyung") is the area unit used in Korea.
+
 class Area:
-    def __init__(self, m2=None, py=None, roundunit=2):
-        self.m2 = m2
-        self.py = py
-        self.roundunit = roundunit
-        self._intlz()
-        self.area = (self.m2, self.py)
+    """
+    Transform between m2 and PY units.
     
+    Parameters
+    ----------
+    m2 : int, float, default None
+    py : int, float, default None
+    roundunit : int, default 2
+    
+    Attributes
+    ----------
+    area : tuple
+        return a tuple of m2, py.
+    m2 : float
+        value of m2 unit
+    py : float
+        value of py unit
+        
+    Examples
+    --------
+    >>> ar = Area(1000)
+    >>> ar.area
+        (1000, 302.5)
+    >>> ar.py
+        302.5
+    >>> ar.m2
+        1000
+    """
+    def __init__(self, m2=None, py=None, roundunit=2):
+        self._m2 = m2
+        self._py = py
+        self._roundunit = roundunit
+        self._intlz()
+        
     def _intlz(self):
-        if all([any([self.m2, self.m2==0]), not self.py]):
-            self.py = round(self.m2 * PY, self.roundunit)
-        if all([any([self.py, self.py==0]), not self.m2]):
-            self.m2 = round(self.py / PY, self.roundunit)
-
-
+        if all([self._m2 is not None, self._py is None]):
+            self._py = round(self._m2 * PY, self._roundunit)
+        if all([self._m2 is None, self._py is not None]):
+            self._m2 = round(self._py / PY, self._roundunit)
+            
+    @property
+    def area(self):
+        return (self._m2, self._py)
+        
+    @property
+    def m2(self):
+        return self._m2
+        
+    @property
+    def py(self):
+        return self._py
+        
+        
 class EmptyClass:
     def __init__(self):
         pass
-    
+        
     def __getattr__(self, attr):
         return self.__dict__[attr]
-    
+        
     def __getitem__(self, key):
         return self.__dict__[key]
-
-
+        
+        
 def is_iterable(data):
     if type(data) == str:
         return False
@@ -44,8 +99,32 @@ def is_iterable(data):
     except TypeError:
         return False
         
-
+        
 def limited(val, upper=None, lower=None):
+    """
+    Adjust the input value between "upper" and "lower" values.
+    
+    Parameters
+    ----------
+    val : int, float
+        input value
+    upper : int, float, list, tuple
+        the criteria for distinguishing upper values
+    lower : int, float, list, tuple
+        the criteria for distinguishing lower values
+    
+    Return
+    ------
+    Adjusted value between upper values and lower values.
+        
+    Examples
+    --------
+    >>> limited(100, upper=90, lower=50)
+        90
+    >>> limited(30, lower=[10, 40])
+        40
+    """
+
     tmp_val = val
     
     if upper:
@@ -54,7 +133,7 @@ def limited(val, upper=None, lower=None):
                 tmp_val = min(tmp_val, val_lmt)
         else:
             tmp_val = min(tmp_val, upper)
-    
+            
     if lower:
         if is_iterable(lower):
             for val_lmt in lower:
@@ -66,16 +145,69 @@ def limited(val, upper=None, lower=None):
     
 def rounding(df, rate=None):
     rslt_df = df.copy()
-    for key, val in rslt_df.items():
-        if rate and key in rate:
+    for key, item in rslt_df.items():
+        if rate is not None and key in rate:
             rslt_df[key] = rslt_df[key] * 100
-        if all([isinstance(x, (int, float)) for x in rslt_df[key]]):
-            if all([abs(x) < 100 or pd.isnull(x) for x in rslt_df[key]]):
-                rslt_df[key] = rslt_df[key].fillna(0).apply(lambda x: f"{x:,.2f}")
-            else:
-                rslt_df[key] = rslt_df[key].fillna(0).apply(lambda x: f"{x:,.0f}")
+        if all([isinstance(val, (int, float)) for val in rslt_df[key]]):
+            rslt_df[key] = rslt_df[key].fillna(0).apply(lambda x: f"{x:,.0f}")
     return rslt_df
     
+    
+def print_rounding(df):
+    """
+    Apply a separator to the number and round the number.
+    
+    Parameters
+    ----------
+    df : DataFrame
+    
+    Return
+    ------
+    DataFrame rounded and applied a separator to the number
+        
+    Examples
+    --------
+    >>> df = DataFrame({'a':[100000,     200000    ], 
+                        'b':[100000.123, 200000.321], 
+                        'c':['abc',      'cde'     ]})
+    >>> print_rounding(df)
+                 a        b    c
+        0  100,000  100,000  abc
+        1  200,000  200,000  cde
+    """
+    rslt_df = df.copy()
+    for key, item in rslt_df.items():
+        if is_numeric_dtype(item):
+            rslt_df[key] = rslt_df[key].fillna(0).apply(lambda x: f"{x:,.0f}")
+    return rslt_df
+        
+        
+def round_up(number:float, decimals:int=2):
+    """
+    Return a value rounded up to a specific number of decimal places.
+    
+    Parameters
+    ----------
+    number : int, float
+    decimals : int
+    
+    Return
+    ------
+    float
+        
+    Examples
+    --------
+    >>> round_up(123.1231, 1)
+        123.2
+    """
+    if not isinstance(decimals, int):
+        raise TypeError("decimal places must be an integer")
+    elif decimals == 0:
+        return math.ceil(number)
+        
+    factor = 10 ** decimals
+    return math.ceil(number * factor) / factor
+
     
 def log10(val):
     tmpval = 0
@@ -85,33 +217,13 @@ def log10(val):
             tmpval += 1
         else:
             return tmpval
-            
-            
-def round_up(number:float, decimals:int=2):
-    """
-    Returns a value rounded up to a specific number of decimal places.
-    """
-    if not isinstance(decimals, int):
-        raise TypeError("decimal places must be an integer")
-    elif decimals == 0:
-        return math.ceil(number)
+    
+    
 
-    factor = 10 ** decimals
-    return math.ceil(number * factor) / factor
     
     
-def percent(val:float):
-    return val / 100
     
     
-def read_json(dct):
-    if 'DataFrame' in dct['type']:
-        if 'index' in dct and 'columns' in dct:
-            dct['df'] = DataFrame(dct['data'], index=dct['index'], columns=dct['columns'])
-        elif 'columns' in dct:
-            dct['df'] = DataFrame(dct['data'], columns=dct['columns'])
-        elif 'index' in dct:
-            dct['df'] = DataFrame(dct['data'], index=dct['index'])
-        else:
-            dct['df'] = DataFrame(dct['data'])
-    return dct
+    
+    
+    

@@ -1,68 +1,137 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Written by KP_Hong <kphong16@daum.net>
+2021, KP_Hong
+
+INDEX
+
+Modules
+-------
+Index : Create and manage an array of dates
+PrjtIndex : Create and manage index objects
+
+Methods
+-------
+booleanloc : Return boolean array of data which is in array
+"""
+
 import pandas as pd
 import numpy as np
-from pandas import Series, DataFrame
-from pandas.tseries.offsets import Day, MonthEnd
+
 from datetime import datetime
-from datetime import timedelta
 from datetime import date
-from functools import wraps
 
-# import genfunc
-from . import genfunc
+from .genfunc import is_iterable
 
-__all__ = ['Index', 'PrjtIndex', 'booleanloc']
+__all__ = ['Index', 'booleanloc', 'PrjtIndex']
 
 class Index(object):
     """
-    PARAMETERS
-    - start: day, ex) '2021-01', '2021-01-01'
-    - end: day, ex) '2021-01', '2021-01-01'
-    - periods: int, ex) 12 <- for twelve months
-    - freq: str, ex) 'M' <- for last date of month
-      + 'D' : Day
-      + 'B' : Business Day
-      + 'M' : MonthEnd
-      + 'BM' : Business MonthEnd
-      + 'MS' : MonthBegin
-      + 'BMS' : Business MonthBegin
-      + 'WOM-1MON', 'WOM-2MON', ... : Week of Month(1st monday of every month)
-    ATTRIBUTES
-    - _range : DatetimeIndex of data
-    - _idxno : Index numbering
-    - index : date of DatetimeIndex
-    - year : year array of DatetimeIndex
-    - month : month array of DatetimeIndex
-    - day : day array of DatetimeIndex
-    - idxno : Index numbering
-    METHODS
-    - __getitem__(no) : use like Index[no], return Index.index[no]
-    - __len__() : use like len(Index), return len(index)
-    - idxloc(year=None, month=None, day=None) :
-      + Return boolean array of data(year, month, day) which is in array
+    Parameters
+    ----------
+    start : date, ex) '2021-01', '2021-01-01'
+    end : date, ex) '2021-01', '2021-01-01'
+    periods : int, ex) 12 <- for twelve months
+    freq : str, frequency of data, default "M", ex) 'M', 'D'
+    + 'D' : Day
+    + 'B' : Business Day
+    + 'M' : MonthEnd
+    + 'BM' : Business MonthEnd
+    + 'MS' : MonthBegin
+    + 'BMS' : Business MonthBegin
+    + 'WOM-1MON', 'WOM-2MON', ... : Week of Month(1st monday of every month)
+      
+    Attributes
+    ----------
+    arr : Array of datetime date objects
+    idxno : Index numbering of array
+    year : Array of year on date array
+    month : Array of month on date array
+    day : Array of day on date array
+    
+    Methods
+    -------
+    __getitem__ : Return the number of the index or the date object
+    __len__ : Return the lenth of array
+    isloc : Check data(year, month, day) is in the array and return 
+        the boolean array.
+    noloc : Check data(year, month, day) is in the array and return
+        the index number array.
+    valloc : Check data(year, month, day) is in the array and return
+        the date object array.
+        
+    Todos
+    -----
+    
+    
+    
     """
-    def __init__(self,
-                start: Day = None,
-                end: Day = None,
-                periods: int = None,
-                freq: str = None
-                ) -> None:
-        self.start = start
-        self.end = end
-        self.periods = periods
-        self.freq = freq
-        self._range = pd.date_range(self.start, self.end, self.periods,
-                      self.freq)
+    
+    def __init__(self, start    = None,
+                       end      = None,
+                       periods  = None,
+                       freq     = 'M',
+                       ):
+        self._start = start
+        self._end = end
+        self._periods = periods
+        self._freq = freq
+        self._range = pd.date_range(start, end, periods, freq)
         self._idxno = np.arange(len(self._range))
         
-    def __getitem__(self, no):
-        return self.index[no]
+    @property
+    def arr(self):
+        return self._range.date
+        
+    def __getitem__(self, val):
+        """
+        If val is an integer, return the date which is in location index.
+        If val is a date, return the location index number.
+        If val is a string, seperate the string to tuple(year, month, day).
+            And apply valloc function to return the list of dates.
+        
+        Parameters
+        ----------
+        val: int, slice, date, date like string, 
+            ex) 0, 1:3, datetime.date(2021, 4, 30), "2021-04", "2021-04-30"
+        
+        Return
+        ------
+        datetime.date
+        Array of datetime.date
+        location index number
+        
+        Examples
+        --------
+        >>> idx = Index("2021.01", "2022.12")
+        >>> idx[0]
+            datetime.date(2021, 1, 31)
+        >>> idx[1:3]
+            array([datetime.date(2021, 2, 28), datetime.date(2021, 3, 31)],
+            dtype=object)
+        >>> idx[datetime.date(2021, 4, 30)]
+            3
+        >>> idx["2021-04"]
+            array([datetime.date(2021, 4, 30)], dtype=object)
+        >>> idx["2021"]
+            array([datetime.date(2021, 1, 31), datetime.date(2021, 2, 28),
+            datetime.date(2021, 3, 31), datetime.date(2021, 4, 30),
+            ...
+            datetime.date(2021, 11, 30)], dtype=object)
+        """
+        if isinstance(val, date):
+            tmparr = self._idxno[self.arr == val]
+            return tmparr[0]
+        if isinstance(val, str):
+            strpval = strpdate(val)
+            if is_iterable(strpval):
+                return self.valloc(*strpval)
+            return self.valloc(strpval)
+        return self.arr[val]
         
     def __len__(self):
-        return len(self.index)
-        
-    @property
-    def index(self):
-        return self._range.date
+        return len(self.arr)
         
     @property
     def year(self):
@@ -80,158 +149,132 @@ class Index(object):
     def idxno(self):
         return self._idxno
         
-    def idxloc(self, year=None, month=None, day=None):
+    def isloc(self, year=None, month=None, day=None):
         """
-        Return boolean array of data(year, month, day) is in array
+        Check data(year, month, day) is in the array and return the boolean array result.
+        
+        Parameters
+        ----------
+        year: int, list, tuple, ex) 2021, 2022, [2021, 2022]
+        month: int, list, tuple, ex) 6, 7, [6, 7]
+        day: int, list, tuple, ex) 3, 30, [3, 30]
+        
+        Return
+        ------
+        Array of boolean
+        
+        Examples
+        --------
+        >>> idx = Index("2021.01", "2022.12")
+        >>> idx.isloc(month=[6, 7, 8])
+            array([False, False, False, False, False,  True,  True,  True,
+            False, False, False, False, False, False, False, False, False,
+            True, True, True, False, False, False])
         """
         isyear = _getblnloc(self.year, year)
         ismonth = _getblnloc(self.month, month)
         isday = _getblnloc(self.day, day)
         
         return isyear & ismonth & isday
-
-    def locno(self, year, month=None, day=None):
+                
+    def noloc(self, year=None, month=None, day=None):
         """
-        Return index no. which data(year, month, day) is in
-        """
-        if isinstance(year, int):
-            tmp_loc = self.idxloc(year, month, day)
-        elif isinstance(year, date):
-            tmp_loc = self.index == year
+        Check data(year, month, day) is in the array and return the index number array result.
         
-        try:
-            tmpval = self.idxno[tmp_loc]
-            if len(tmpval) == 1:
-                return int(tmpval)
-            else:
-                raise ValueError
-        except AttributeError as err:
-            print("AttributeError", err)
-            
-    def locval(self, year=None, month=None, day=None):
+        Parameters
+        ----------
+        year: int, list, tuple, ex) 2021, 2022, [2021, 2022]
+        month: int, list, tuple, ex) 6, 7, [6, 7]
+        day: int, list, tuple, ex) 3, 30, [3, 30]
+        
+        Return
+        ------
+        Array of index number
+        
+        Examples
+        --------
+        >>> idx = Index("2021.01", "2022.12")
+        >>> idx.noloc(month=[6, 7, 8])
+            array([ 5,  6,  7, 17, 18, 19])
         """
-        Return index val. which data(year, month, day) is in
+        blnloc = self.isloc(year, month, day)
+        return self._idxno[blnloc]
+        
+    def valloc(self, year=None, month=None, day=None):
         """
-        tmpno = self.locno(year, month, day)
+        Check data(year, month, day) is in the array and return the date object array result.
+        
+        Parameters
+        ----------
+        year: int, list, tuple, ex) 2021, 2022, [2021, 2022]
+        month: int, list, tuple, ex) 6, 7, [6, 7]
+        day: int, list, tuple, ex) 3, 30, [3, 30]
+        
+        Return
+        ------
+        Array of datetime.date objects
+        
+        Examples
+        --------
+        >>> idx = Index("2021.01", "2022.12")
+        >>> idx.valloc(month=[6, 7, 8])
+            array([datetime.date(2021, 6, 30), datetime.date(2021, 7, 31),
+            datetime.date(2021, 8, 31), datetime.date(2022, 6, 30),
+            datetime.date(2022, 7, 31), datetime.date(2022, 8, 31)],
+            dtype=object)
+        """
+        tmpno = self.noloc(year, month, day)
         return self[tmpno]
-
-
-class PrjtIndex(object):
-    """
-    PARAMETERS
-    - idxname : list of string, ex) ['prjt', 'cstrn', 'loan', 'sales']
-    - start : list of date, ex) ['2021-08', '2021-10', '2021-10', '2021-11']
-    - end : list of date
-    - periods : list of integer, ex) [24+1, 18+1, 20+1, 16+1]
-    - freq : string, frequency of data, ex) 'M'
-    - prjtno : int, default 0
-      + set main, project index
-      + If is is 0 then idxname[0], i.e. 'prjt' index become main and project idx
-    ATTRIBUTES
-    - index : date of DatetimeIndex on project index
-    - year : year array of DatetimeIndex on project index
-    - month : month array of DatetimeIndex on project index
-    - day : day array of DatetimeIndex on project index
-    - idxno : Index numbering on project index
-    METHODS
-    - __getitem__(no) : use like Index[no], return index[no] of project index
-    - __len__() : use like len(Index), return len of project index
-    - idxloc(year=None, month=None, day=None) :
-      + Return boolean array of data(year, month, day) which is in array
-      + Data of project index
-    """
-    def __init__(self, 
-                 idxname,
-                 start = None, 
-                 end = None,
-                 periods = None, 
-                 freq: str = None,
-                 prjtno = 0
-                 ):
-        self.idxname = idxname
-        self.start = start
-        self.end = end
-        self.periods = periods
-        self.freq = freq
-        self._prjtno = prjtno
         
-        # Initialize
-        self._intlz()
-        
-    def _intlz(self):
-        self._setidxcls()
-        self._prjt = getattr(self, self.idxname[self._prjtno])
-        # Set project idx to PrjtIndex._prjt
-    
-    def _setidxcls(self):
-        """Set each index of idxname list.
-        Set attributes with each idxname, for Index instance of each idxname
+    def __repr__(self):
         """
-        for no, name in enumerate(self.idxname):
-            tmpidx = Index(self._isnone(self.start, no), 
-                           self._isnone(self.end, no), 
-                           self._isnone(self.periods, no),
-                           self.freq)
-            setattr(self, name, tmpidx)
-    
-    def _isnone(self, val, no):
-        """If val is None, return None.
-        If val has a data excepting None, return val[no]
+        Return a string representation for this object.
         """
-        if val:
-            return val[no]
-        else:
-            return val
+        name = type(self).__name__
+        data = self.arr
+        return f"{name},\n{data}"
+        
+        
+def strpdate(arg):
+    if "-" in arg:
+        args = arg.split("-")
+        if len(args) == 2:
+            year = int(args[0])
+            month = int(args[1])
+            return (year, month)
+        if len(args) == 3:
+            year = int(args[0])
+            month = int(args[1])
+            day = int(args[2])
+            return (year, month, day)
+    elif "." in arg:
+        args = arg.split(".")
+        if len(args) == 2:
+            year = int(args[0])
+            month = int(args[1])
+            return (year, month)
+        if len(args) == 3:
+            year = int(args[0])
+            month = int(args[1])
+            day = int(args[2])
+            return (year, month, day)
+    else:
+        year = int(arg)
+        return (year)
+        
     
-    def __getitem__(self, idxno):
-        if type(idxno) is int:
-            return self._prjt[idxno]
-        elif type(idxno) is str:
-            tmpidx = getattr(self, idxno)
-            return tmpidx
-    
-    def __len__(self):
-        return len(self._prjt)
-        
-    @property
-    def index(self):
-        return self._prjt.index        
-    
-    @property
-    def year(self):
-        return self._prjt.year
-        
-    @property
-    def month(self):
-        return self._prjt.month
-        
-    @property
-    def day(self):
-        return self._prjt.day
-        
-    @property
-    def idxno(self):
-        return self._prjt.idxno
-        
-    def idxloc(self, year=None, month=None, day=None):
-        return self._prjt.idxloc(year, month, day)
-
-    def locno(self, year, month=None, day=None):
-        return self._prjt.locno(year, month, day)
-        
-    def locval(self, year=None, month=None, day=None):
-        return self._prjt.locval(year, month, day)
-        
 def _getblnloc(array, val):
-    if val == None:
+    """
+    Get boolean location
+    """
+    if val is None:
         return [True]
     else:
         return booleanloc(array)[val]
-
-
+        
 class booleanloc():
     """
-    Return boolean array of data is in array
+    Return boolean array of data which is in array
     
     Parameters
     ----------
@@ -253,7 +296,7 @@ class booleanloc():
         self.array = array
         
     def __getitem__(self, data):
-        if genfunc.is_iterable(data):
+        if is_iterable(data):
             return self.loopiniter(self.array, data)
         else:
             return self.array == data
@@ -266,5 +309,250 @@ class booleanloc():
             tmp = tmp | blnarray
         return tmp
         
+
+class PrjtIndex(object):
+    """
+    Parameters
+    ----------
+    idxname : list of string, ex) ['prjt', 'cstrn', 'loan']
+    start : list of date, ex) ['2021-01', '2021-01', '2021-01']
+    end : list of date, ex) ['2022-12', '2022-12', '2022-12']
+    periods : list of int, ex) [30, 24, 24]
+    freq : str, frequency of data, default "M", ex) 'M', 'D'
+    + 'D' : Day
+    + 'B' : Business Day
+    + 'M' : MonthEnd
+    + 'BM' : Business MonthEnd
+    + 'MS' : MonthBegin
+    + 'BMS' : Business MonthBegin
+    + 'WOM-1MON', 'WOM-2MON', ... : Week of Month(1st monday of every month)
+    mainidxno : int, default 0
+        Set main index
+        If it is 0 then idxname[0] be main index.
+      
+    Attributes
+    ----------
+    dct : Dictionary of indexes
+    arr : Array of datetime date objects from main index
+    idxno : Index numbering of array from main index
+    year : Array of year on date array from main index
+    month : Array of month on date array from main index
+    day : Array of day on date array from main index
+    
+    Methods
+    -------
+    All of the below methods operate under the main index.
+    __getitem__ : Return the number of the index or the date object
+    __len__ : Return the lenth of array
+    isloc : Check data(year, month, day) is in the array and return 
+        the boolean array.
+    noloc : Check data(year, month, day) is in the array and return
+        the index number array.
+    valloc : Check data(year, month, day) is in the array and return
+        the date object array.
+    """
+    def __init__(self,
+                 idxname,
+                 start = None,
+                 end = None,
+                 periods = None,
+                 freq: str = 'M',
+                 mainidxno = 0
+                 ):
+        self._idxname = idxname
+        self._start = start
+        self._end = end
+        self._periods = periods
+        self._freq = freq
+        self._mainidxno = mainidxno
+        self.dct = {}
         
+        self._intlz()
         
+    def _intlz(self):
+        self._setidx()
+        self.main = self.dct[self._idxname[self._mainidxno]]
+        
+    def _setidx(self):
+        """
+        Set each index on idxname list.
+        Set attributes on each index
+        """
+        for no, idxnm in enumerate(self._idxname):
+            idxistnc = Index(start = self._isNone(self._start, no),
+                             end = self._isNone(self._end, no),
+                             periods = self._isNone(self._periods, no),
+                             freq = self._freq)
+            self.dct[idxnm] = idxistnc
+            setattr(self, idxnm, idxistnc)
+            
+    def _isNone(self, val, no):
+        """
+        If val is None, return None.
+        If val has a data, return val[no]
+        """
+        if val is not None:
+            return val[no]
+        else:
+            return val
+            
+    def __getitem__(self, val):
+        """
+        If val is a string and the string is in dictionary, 
+            return the index of which name is the string.
+        If val is a string, seperate the string to tuple(year, month, day).
+            And apply valloc function to return the list of dates.
+        If val is an integer, return the date which is in location index.
+        If val is a date, return the location index number.
+        
+        Parameters
+        ----------
+        val: str, int, slice, date, ex) "loan", 0, 1:3, 
+            datetime.date(2021, 4, 30)
+        
+        Return
+        ------
+        Index object
+        datetime.date
+        Array of datetime.date
+        location index number
+        
+        Examples
+        --------
+        >>> prjtidx = cf.PrjtIndex(idxname=['prjt', 'cstrn', 'loan'],
+                       start=['2021-01', '2021-05', '2021-07'],
+                       periods=[18, 10, 8])
+        >>> prjtidx['cstrn'].arr
+            array([datetime.date(2021, 5, 31), datetime.date(2021, 6, 30),
+            datetime.date(2021, 7, 31), datetime.date(2021, 8, 31),
+            datetime.date(2021, 9, 30), datetime.date(2021, 10, 31),
+            datetime.date(2021, 11, 30), datetime.date(2021, 12, 31),
+            datetime.date(2022, 1, 31), datetime.date(2022, 2, 28)],
+            dtype=object)
+        >>> prjtidx[0]
+            datetime.date(2021, 1, 31)
+        >>> prjtidx[1:3]
+            array([datetime.date(2021, 2, 28), datetime.date(2021, 3, 31)],
+            dtype=object)
+        >>> prjtidx[datetime.date(2021, 4, 30)]
+            3
+        >>> idx["2021-04"]
+            array([datetime.date(2021, 4, 30)], dtype=object)
+        >>> idx["2021"]
+            array([datetime.date(2021, 1, 31), datetime.date(2021, 2, 28),
+            datetime.date(2021, 3, 31), datetime.date(2021, 4, 30),
+            ...
+            datetime.date(2021, 11, 30)], dtype=object)
+        """
+        if isinstance(val, str):
+            if val in self.dct:
+                return self.dct[val]
+            strpval = strpdate(val)
+            if is_iterable(strpval):
+                return self.valloc(*strpval)
+            return self.valloc(strpval)
+            
+        if isinstance(val, date):
+            return self.main[val]
+        return self.main[val]
+
+    def __len__(self):
+        return len(self.main)
+    
+    @property
+    def arr(self):
+        return self.main.arr
+    
+    @property
+    def year(self):
+        return self.main.year
+    
+    @property
+    def month(self):
+        return self.main.month
+        
+    @property
+    def day(self):
+        return self.main.day
+        
+    @property
+    def idxno(self):
+        return self.main.idxno
+        
+    def isloc(self, year=None, month=None, day=None):
+        """
+        Check data(year, month, day) is in the array and return the boolean array result.
+        
+        Parameters
+        ----------
+        year: int, list, tuple, ex) 2021, 2022, [2021, 2022]
+        month: int, list, tuple, ex) 6, 7, [6, 7]
+        day: int, list, tuple, ex) 3, 30, [3, 30]
+        
+        Return
+        ------
+        Array of boolean
+        
+        Examples
+        --------
+        >>> prjtidx = PrjtIndex(["prjt"], ["2021.01"], ["2022.12"])
+        >>> prjtidx.isloc(month=[6, 7, 8])
+            array([False, False, False, False, False,  True,  True,  True,
+            False, False, False, False, False, False, False, False, False,
+            True, True, True, False, False, False])
+        """
+        return self.main.isloc(year, month, day)
+        
+    def noloc(self, year=None, month=None, day=None):
+        """
+        Check data(year, month, day) is in the array and return the index number array result.
+        
+        Parameters
+        ----------
+        year: int, list, tuple, ex) 2021, 2022, [2021, 2022]
+        month: int, list, tuple, ex) 6, 7, [6, 7]
+        day: int, list, tuple, ex) 3, 30, [3, 30]
+        
+        Return
+        ------
+        Array of index number
+        
+        Examples
+        --------
+        >>> prjtidx = PrjtIndex(["prjt"], ["2021.01"], ["2022.12"])
+        >>> prjtidx.noloc(month=[6, 7, 8])
+            array([ 5,  6,  7, 17, 18, 19])
+        """
+        return self.main.noloc(year, month, day)
+
+    def valloc(self, year=None, month=None, day=None):
+        """
+        Check data(year, month, day) is in the array and return the date object array result.
+        
+        Parameters
+        ----------
+        year: int, list, tuple, ex) 2021, 2022, [2021, 2022]
+        month: int, list, tuple, ex) 6, 7, [6, 7]
+        day: int, list, tuple, ex) 3, 30, [3, 30]
+        
+        Return
+        ------
+        Array of datetime.date objects
+        
+        Examples
+        --------
+        >>> prjtidx = PrjtIndex(["prjt"], ["2021.01"], ["2022.12"])
+        >>> prjtidx.valloc(month=[6, 7, 8])
+            array([datetime.date(2021, 6, 30), datetime.date(2021, 7, 31),
+            datetime.date(2021, 8, 31), datetime.date(2022, 6, 30),
+            datetime.date(2022, 7, 31), datetime.date(2022, 8, 31)],
+            dtype=object)
+        """
+        return self.main.valloc(year, month, day)
+
+    def __repr__(self):
+        """
+        Return a string representation for this object.
+        """
+        return f"Indexes: {self._idxname}\nMain: {self._idxname[self._mainidxno]}\n{self.arr}"
+

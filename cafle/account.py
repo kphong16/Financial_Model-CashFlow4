@@ -1,122 +1,134 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Written by KP_Hong <kphong16@daum.net>
+2021, KP_Hong
+
+ACCOUNT
+
+Modules
+-------
+
+
+Attributes
+----------
+
+
+Methods
+-------
+
+
+"""
+
 import pandas as pd
 import numpy as np
 from pandas import Series, DataFrame
-from pandas.tseries.offsets import Day, MonthEnd
-import datetime as dt
+
 from datetime import datetime
-from datetime import timedelta
 from datetime import date
 from functools import wraps
-import json
 
-# import genfunc
-# from index import Index
 from .genfunc import *
 from .index import Index, PrjtIndex
 
-__all__ = ['Account', 'Merge', 'Collect', 'Intlz_accounts', 'set_acc', 'set_once', 'set_scdd', 'set_rate']
+__all__ = ['Account', 'Merge',
+           'set_acc', 'set_once', 'set_scd', 'set_rate']
 
 class Account(object):
     """
-    PARAMETERS
-    - index : Index class
-    - title : string
-    - tag : tuple of str
-    - balstrt : default 0, amount which the balance starts
-    - note : str
-    ATTRIBUTES
-    - df : Dataframe of data summary
-    - _df : Dataframe of all data
-    - add_scdd : get value of "add_scdd" column
-      ex) Account.add_scdd[idx[0]]
-    - add_scdd_cum : get value of "add_scdd_cum" column
-    - sub_scdd : get value of "sub_scdd" column
-    - sub_scdd_cum : get value of "sub_scdd_cum" column
-    - bal_strt : get value of "bal_strt" column
-    - amt_add : get value of "amt_add" column
-    - amt_add_cum : get value of "amt_add_cum" column
-    - amt_sub : get value of "amt_sub" column
-    - amt_sub_cum : get value of "amt_sub_cum" column
-    - bal_end : get value of "bal_end" column
-    - add_rsdl_cum : get value of "add_rsdl_cum" column
-    - sub_rsdl_cum : get value of "sub_rsdl_cum" column
-    METHODS
-    - send(index, amt, account) : Transfer amount to "account" account
-    - addscdd(index, amt) : Input amt data on "add_scdd" column.
-      ex) Account.addscdd(idx[0], 10_000)
-      ex) Account.addscdd(idx[[1, 2]], [10_000, 20_000])
-    - subscdd(index, amt) : Input amt data on "sub_scdd" column.
-    - addamt(index, amt) : Input amt data on "amt_add" column.
-    - subamt(index, amt): Input amt data on "amt_sub" column.
-    - iptamt(index, amt) : Input amt data on "amt_add" or "amt_sub" column.
+    Parameters
+    ----------
+    index : index class
+    title : str, name of account
+    balstrt : int, float, default 0, start balance of account
+    
+    Attributes
+    ----------
+    index : index class
+    title : str, name of account
+    balstrt : start balance of account
+    DFCOL : columns of the dataframe
+    DFCOL_smry : summary columns of the dataframe
+    JNLCOL : columns of the journal
+        
+    Methods
+    -------
+    <input data>
+    addscd(index, amt) : add the amt on the 'scd_in' column of the dataframe.
+    subscd(index, amt) : add the amt on the 'scd_out' column of the dataframe.
+    addamt(index, amt, rcvfrm=None, note="add_amt")
+        add the amt on the 'amt_in' column of the dataframe.
+    subamt(index, amt, payto=None, note="sub_amt")
+        add the amt on the 'amt_out' column of the dataframe.
+    iptamt(index, amt, rcvfrm=None, payto=None, note=None):
+        if amt is positive, apply addamt, else apply subamt.
+    iptjnl(index, amt_in, amt_out, rcvfrm=None, payto=None, note=None)
+        add the amt on the journal.
+    
+    <output data>
+    df : return the summarised dataframe
+    _df : return the total dataframe
+    jnl : return the journal dataframe
+    scd_in[slice] : return the value on the scd_in column.
+    scd_in_cum[slice] : return the value on the scd_in_cum column.
+    scd_out[slice] : return the value on the scd_out column.
+    scd_out_cum[slice] : return the value on the scd_out_cum column.
+    bal_strt[slice] : return the value on the bal_strt column.
+    amt_in[slice] : return the value on the amt_in column.
+    amt_in_cum[slice] : return the value on the amt_in_cum column.
+    amt_out[slice] : return the value on the amt_out column.
+    amt_out_cum[slice] : return the value on the amt_out_cum column.
+    bal_end[slice] : return the value on the bal_end column.
+    rsdl_in_cum[slice] : return the value on the rsdl_in_cum column.
+    rsdl_out_cum[slice] : return the value on the rsdl_out_cum column.
+    
+    <etc.>
+    amt_rqrd_excs(index, rqrdamt, minunit=100)
+        return an additional amount compared to the account balance.
+    send(index, amt, account, note=None)
+        transfer the amount from this account to the opponent account.
     """
     def __init__(self,
-                 index = None, # Index class
-                 title = None, # string : "ProductA"
-                 tag = None, # string tuple : ("tagA", "tagB")
-                 balstrt = 0, # int
-                 note = "" # string
+                 index=None,
+                 title=None,
+                 balstrt=0
                  ):
-        # index 입력
         if isinstance(index, Index):
-            self.cindex = index
-            self.index = index.index
+            self.index = index
         elif isinstance(index, PrjtIndex):
-            self.cindex = index._prjt
-            self.index = index.index
+            self.index = index.main
             
-        # title 입력
         self.title = title
-        
-        # tag 입력 : tag는 튜플로 받음. string으로 입력된 경우 튜플로 변환 필요
-        if isinstance(tag, tuple):
-            self.tag = tag
-        elif isinstance(tag, str):
-            self.tag = tuple(tag)
-        elif tag is None:
-            self.tag = None
-        else:
-            raise ValueError("tag is not a tuple")
-            
-        # balstrt 입력
         self.balstrt = balstrt
         
-        # note 입력
-        self.note = note
-        
-        # Initialize
         self._intlz()
-
+        
     def _intlz(self):
-        # 초기화 함수 실행
+        # Initial Setting Function
+        self.DFCOL = ['scd_in', 'scd_in_cum', 'scd_out', 'scd_out_cum', 
+                      'bal_strt', 'amt_in', 'amt_in_cum', 
+                      'amt_out', 'amt_out_cum', 'bal_end',
+                      'rsdl_in_cum', 'rsdl_out_cum']
+        self.DFCOL_smry = ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
+        self.JNLCOL = ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
         self._setdf()
         self._setjnl()
         self._set_outputfunc()
     
-    #### INITIAL SETTING FUNCTION #### 초기화 함수
-    DFCOL = ['add_scdd', 'add_scdd_cum', 'sub_scdd', 'sub_scdd_cum',
-             'bal_strt', 'amt_add', 'amt_add_cum', 
-             'amt_sub', 'amt_sub_cum', 'bal_end',
-             'add_rsdl_cum', 'sub_rsdl_cum']
-    DFCOL_smry = ['add_scdd', 'sub_scdd', 
-                  'bal_strt', 'amt_add', 'amt_sub', 'bal_end']
-    JNLCOL = ['amt_add', 'amt_sub', 'rcvfrom', 'payto', 'note']
     def _setdf(self):
-        # DataFrame 초기화
-        self._df = pd.DataFrame(np.zeros([len(self.index), len(self.DFCOL)]),
-                               columns = self.DFCOL, 
-                               index = self.index)
+        # Initialize DataFrame
+        self._df = DataFrame(np.zeros([len(self.index), len(self.DFCOL)]), \
+                             columns = self.DFCOL, \
+                             index = self.index)
         self._df.loc[self.index[0], 'bal_strt'] = self.balstrt
         
-        # balance 계산 실행
         self._cal_bal()
         
     def _setjnl(self):
-        # Journal(분개장) 초기화
-        self.jnl = pd.DataFrame(columns = self.JNLCOL)
-    #### INITIAL SETTING FUNCTION ####
-    
-    #### DECORATOR ####
+        # Initialize Journal
+        self._jnl = DataFrame(columns = self.JNLCOL)
+        
+    # Decorator
     def listwrapper(func):
         @wraps(func)
         def wrapped(self, *args):
@@ -136,623 +148,675 @@ class Account(object):
                 new_args = args
                 func(self, *new_args)
         return wrapped
-                
-    #### DECORATOR ####
-     
-    #### CALCULATE DATA BALANCE ####
-    def _cal_bal(self):
-        # 누적합 계산
-        self._df.loc[:, 'add_scdd_cum'] = self._df.loc[:, 'add_scdd'].cumsum()
-        self._df.loc[:, 'sub_scdd_cum'] = self._df.loc[:, 'sub_scdd'].cumsum()
-        self._df.loc[:, 'amt_add_cum'] = self._df.loc[:, 'amt_add'].cumsum()
-        self._df.loc[:, 'amt_sub_cum'] = self._df.loc[:, 'amt_sub'].cumsum()
         
-        # 계좌 잔액 계산
+    # Calculate Data Balance
+    def _cal_bal(self):
+        self._df.scd_in_cum = self._df.scd_in.cumsum()
+        self._df.scd_out_cum = self._df.scd_out.cumsum()
+        self._df.amt_in_cum = self._df.amt_in.cumsum()
+        self._df.amt_out_cum = self._df.amt_out.cumsum()
+        
+        # Calculate account balance
         for i, idx in enumerate(self.index):
             if i > 0:
-                self._df.loc[idx, 'bal_strt'] = self._df.loc[self.index[i-1], 'bal_end']
+                self._df.loc[idx, 'bal_strt'] = self._df.loc[idxpst, 'bal_end']
             self._df.loc[idx, 'bal_end'] = self._df.loc[idx, 'bal_strt'] \
-                                          + self._df.loc[idx, 'amt_add'] \
-                                          - self._df.loc[idx, 'amt_sub']
-        
-        # 누적 합 차액 계산
-        self._df.loc[:, 'add_rsdl_cum'] = self._df.loc[:, 'add_scdd_cum'] \
-                                         - self._df.loc[:, 'amt_add_cum']
-        self._df.loc[:, 'sub_rsdl_cum'] = self._df.loc[:, 'sub_scdd_cum'] \
-                                         - self._df.loc[:, 'amt_sub_cum']
-    #### CALCULATE DATA BALANCE ####
-        
-    
-    #### INPUT DATA ####
-    @listwrapper
-    def addscdd(self, index, amt):
-        self._df.loc[index, 'add_scdd'] += amt
-        self._cal_bal()
-
-    @listwrapper
-    def subscdd(self, index, amt):
-        self._df.loc[index, 'sub_scdd'] += amt
-        self._cal_bal()
-        
-    @listwrapper
-    def addamt(self, index, amt, rcvfrom=None, note="add_amt"):
-        if amt == 0:
-            return
+                                         + self._df.loc[idx, 'amt_in'] \
+                                         - self._df.loc[idx, 'amt_out']
+            idxpst = idx
             
-        # 분개장(journal)에 데이터 입력
-        self.iptjnl(index, amt, 0, rcvfrom, None, note)
+        # Calculate the residual of scheduled amounts
+        self._df.loc[:, 'rsdl_in_cum'] = self._df.loc[:, 'scd_in_cum'] \
+                                       - self._df.loc[:, 'amt_in_cum']
+        self._df.loc[:, 'rsdl_out_cum'] = self._df.loc[:, 'scd_out_cum'] \
+                                        - self._df.loc[:, 'amt_out_cum']
+                                        
+    # Input Data
+    @listwrapper
+    def addscd(self, index, amt):
+        """
+        Add the amount on the 'scd_in' column of dataframe.
         
-        # DataFrame에 데이터 입력
-        self._df.loc[index, 'amt_add'] += amt
+        Parameters
+        ----------
+        index : index, list
+        amt : int, float, list
         
-        # Balance 계산 실행
+        Returns
+        -------
+        None
+        """
+        if isinstance(index, int): index = self.index[index]
+        self._df.loc[index, 'scd_in'] += amt
+        self._cal_bal()
+    
+    @listwrapper
+    def subscd(self, index, amt):
+        """
+        Add the amount on the 'scd_out' column of dataframe.
+        
+        Parameters
+        ----------
+        index : index, list
+        amt : int, float, list
+        
+        Returns
+        -------
+        None
+        """
+        if isinstance(index, int): index = self.index[index]
+        self._df.loc[index, 'scd_out'] += amt
+        self._cal_bal()
+        
+    @listwrapper
+    def addamt(self, index, amt, rcvfrm=None, note="add_amt"):
+        """
+        Add the amount on the 'amt_in' column of dataframe.
+        
+        Parameters
+        ----------
+        index : index, list
+        amt : int, float, list
+        rcvfrm : str, default None
+        note : str, default "add_amt"
+        
+        Returns
+        -------
+        None
+        """
+        if isinstance(index, int): index = self.index[index]
+        if amt == 0:
+            return    
+        self.iptjnl(index, amt, 0, rcvfrm, None, note)
+        self._df.loc[index, 'amt_in'] += amt
         self._cal_bal()
         
     @listwrapper
     def subamt(self, index, amt, payto=None, note="sub_amt"):
+        """
+        Add the amount on the 'amt_out' column of dataframe.
+        
+        Parameters
+        ----------
+        index : index, list
+        amt : int, float, list
+        payto : str, default None
+        note : str, default "sub_amt"
+        
+        Returns
+        -------
+        None
+        """
+        if isinstance(index, int): index = self.index[index]
         if amt == 0:
             return
-            
-        # 분개장(journal)에 데이터 입력
         self.iptjnl(index, 0, amt, None, payto, note)
-        
-        # DataFrame에 데이터 입력
-        self._df.loc[index, "amt_sub"] += amt
-        
-        # Balance 계산 실행
+        self._df.loc[index, 'amt_out'] += amt
         self._cal_bal()
         
     @listwrapper
-    def iptamt(self, index, amt, rcvfrom=None, payto=None, note=None):
+    def iptamt(self, index, amt, rcvfrm=None, payto=None, note=None):
+        """
+        If the amount is positive, apply the addamt, else apply the subamt
+        
+        Parameters
+        ----------
+        index : index, list
+        amt : int, float, list
+        rcvfrm : str, default None
+        payto : str, default None
+        note : str, default "sub_amt"
+        
+        Returns
+        -------
+        None
+        """
+        if isinstance(index, int): index = self.index[index]
         if amt == 0:
             return
-        
-        # amt가 양수인 경우 addamt 실행, 음수인 경우 subamt 실행
         if amt > 0:
-            self.addamt(index, amt, rcvfrom, note)
+            if rcvfrm is None:
+                rcvfrm = "add_amt"
+            self.addamt(index, amt, rcvfrm, note)
         else:
+            if payto is None:
+                payto = "sub_amt"
             self.subamt(index, -amt, payto, note)
-    
-    def iptjnl(self, index, addamt, subamt, rcvfrom=None, payto=None, note=None):
-        tmpjnl = pd.DataFrame([[addamt, subamt, rcvfrom, payto, note]], \
-                              columns=self.JNLCOL, index=[index])
-        self.jnl = pd.concat([self.jnl, tmpjnl])
-    
-    #### INPUT DATA ####
-
-
-    #### OUTPUT DATA ####
-    
-    def _set_outputfunc(self):
-        """
-        Column명을 기준으로 데이터프레임에서 요구되는 값을 찾아서 반환
-        """
-        self.add_scdd = self.add_scdd(self)
-        self.add_scdd_cum = self.add_scdd_cum(self)
-        self.sub_scdd = self.sub_scdd(self)
-        self.sub_scdd_cum = self.sub_scdd_cum(self)
-        self.bal_strt = self.bal_strt(self)
-        self.amt_add = self.amt_add(self)
-        self.amt_add_cum = self.amt_add_cum(self)
-        self.amt_sub = self.amt_sub(self)
-        self.amt_sub_cum = self.amt_sub_cum(self)
-        self.bal_end = self.bal_end(self)
-        self.add_rsdl_cum = self.add_rsdl_cum(self)
-        self.sub_rsdl_cum = self.sub_rsdl_cum(self)    
-    
-    class getattr_dfcol:
-        """
-        데코레이터
-        클래스명을 column 이름으로 받아서 dataframe에서 index no, column name으로
-        값을 찾아서 반환함.
-        """
-        def __call__(self, cls):
-            def init(self, sprinstnc):
-                self.sprinstnc = sprinstnc # super instance <- 상위 클래스의 인스턴스를 의미
-                self.colname = cls.__name__
-            cls.__init__ = init
-            
-            def getitem(self, idxno):
-                return self.sprinstnc._df.loc[idxno, self.colname]
-            cls.__getitem__ = getitem
-            
-            return cls
-    
-    @getattr_dfcol()
-    class add_scdd:
-        pass
-    @getattr_dfcol()
-    class add_scdd_cum:
-        pass
-    @getattr_dfcol()
-    class sub_scdd:
-        pass
-    @getattr_dfcol()
-    class sub_scdd_cum:
-        pass
-    @getattr_dfcol()
-    class bal_strt:
-        pass
-    @getattr_dfcol()
-    class amt_add:
-        pass
-    @getattr_dfcol()
-    class amt_add_cum:
-        pass
-    @getattr_dfcol()
-    class amt_sub:
-        pass
-    @getattr_dfcol()
-    class amt_sub_cum:
-        pass
-    @getattr_dfcol()
-    class bal_end:
-        pass
-    @getattr_dfcol()
-    class add_rsdl_cum:
-        pass
-    @getattr_dfcol()
-    class sub_rsdl_cum:
-        pass
         
-    
-    # 일반적인 데이터 출력 함수
-    @property
-    def df(self):
-        return self._df.loc[:, self.DFCOL_smry]
-
+    def iptjnl(self, index, amt_in, amt_out, rcvfrm=None, payto=None, note=None):
+        """
+        Add the amount on the journal.
+        
+        Parameters
+        ----------
+        index : index
+        amt_in : int, float
+        amt_out : int, float
+        rcvfrm : str, default None
+        payto : str, default None
+        note : str, default None
+        """
+        if isinstance(index, int): index = self.index[index]
+        tmpjnl = DataFrame([[amt_in, amt_out, rcvfrm, payto, note]], 
+                           columns=self.JNLCOL, index=[index])
+        self._jnl = pd.concat([self._jnl, tmpjnl])
     
     def __getattr__(self, attr):
-        """
-        기존에 정의되어 있지 않은 속성이 입력될 경우, 객체를 조회하여 속성을 반환
-        """ 
         return self.__dict__[attr]
         
         
-    # Calculate the amount required in excess of the balance.
-    def amt_rqrd_excess(self, idxno, rqrdamt, minunit = 100):
-        """총 필요한 금액(rqrdamt)에 대하여 계좌 잔액을 초과하는 금액"""
-        amt_rqrd = max(rqrdamt - self.bal_end[idxno], 0)
-        amt_rqrd = round_up(amt_rqrd, -log10(minunit))
-        return amt_rqrd
-    
-    #### OUTPUT DATA ####
-
-
-    #### ACCOUNT TRANSFER ####
-    def send(self, index, amt, account, note=None):
-        # 본 account에서 입력된 account로 계좌 이체
-        self.subamt(index, amt, account.title, note)
-        account.addamt(index, amt, self.title, note)
-    #### ACCOUNT TRANSFER ####
-    
-    
-#### SET DATA ####
-class set_basic_data_decorator():
-    def __call__(self, cls):
-        def init(self, sprcls, title, byname=None, idx=None, crit="addscdd", **kwargs):
-            self.sprcls = sprcls
-            if title not in sprcls._dct:
-                sprcls._dct[title] = self
-                setattr(sprcls, title, self)
-                self.title = title
-                self.idx = idx
-                self.byname = byname
-                self.crit = crit
-                self._dct = {}
-                self.acc = Account(idx, title)
-            self.kwargs = kwargs
-            for key, item in kwargs.items():
-                setattr(self, key, item)
-            self.istc = getattr(self.sprcls, title)
-            self._initialize()
-            
-        @property
-        def dct(self):
-            return self._dct    
-        
-        @property
-        def dctacc(self):
-            tmp = {key: item.acc for key, item in self._dct.items()}
-            return tmp
-        
-        @property
-        def mrg(self):
-            return Merge(self.dctacc)
-            
-        cls.__init__ = init
-        cls.mrg = mrg
-        cls.dct = dct
-        cls.dctacc = dctacc
-        return cls
-
-@set_basic_data_decorator()
-class set_acc:
-    def _initialize(self):
-        pass
-
-@set_basic_data_decorator()
-class set_once:
-    def _initialize(self):
-        if self.crit == "addscdd":
-            self.istc.acc.addscdd(self.scddidx, self.amtttl)
-        elif self.crit == "subscdd":
-            self.istc.acc.subscdd(self.scddidx, self.amtttl)
-
-@set_basic_data_decorator()
-class set_scdd:
-    def _initialize(self):
-        if self.crit == "addscdd":
-            self.istc.acc.addscdd(self.scddidx, self.scddamt)
-        elif self.crit == "subscdd":
-            self.istc.acc.subscdd(self.scddidx, self.scddamt)
-#### SET DATA ####
-
-@set_basic_data_decorator()
-class set_rate:
-    def _initialize(self):
-        scddamt = self.amt * self.rate
-        if self.crit == "addscdd":
-            self.istc.acc.addscdd(self.scddidx, scddamt)
-        elif self.crit == "subscdd":
-            self.istc.acc.subscdd(self.scddidx, scddamt)
-        
-#### SET DATA ####
-
-
-class Merge(object):
-    """
-    PARAMETERS
-    - dct : Account dictionary. ex) {"nameA":A, "nameB":B, ...}
-    ATTRIBUTES
-    - df : Dataframe of data summary
-    - _df : Dataframe of all data
-    - add_scdd : get value of "add_scdd" column
-      ex) Account.add_scdd[idx[0]]
-    - add_scdd_cum : get value of "add_scdd_cum" column
-    - sub_scdd : get value of "sub_scdd" column
-    - sub_scdd_cum : get value of "sub_scdd_cum" column
-    - bal_strt : get value of "bal_strt" column
-    - amt_add : get value of "amt_add" column
-    - amt_add_cum : get value of "amt_add_cum" column
-    - amt_sub : get value of "amt_sub" column
-    - amt_sub_cum : get value of "amt_sub_cum" column
-    - bal_end : get value of "bal_end" column
-    - add_rsdl_cum : get value of "add_rsdl_cum" column
-    - sub_rsdl_cum : get value of "sub_rsdl_cum" column
-    METHODS
-    - dfcol(col, col_criteria=False) : Return a dataframe sorted by column name.
-      + col : str(col name) or list of str(col name)
-    - title() : Gather title data on each instances of dictionary
-    - tag() : Gather tag data on each instances of dictionary
-    - note() : Gather note data on each instances of dictionary 
-    """
-    def __init__(self, dct:dict):
-        self.dct = dct
-        self._set_idxmain()
-        self._set_outputfunc()
-    
-    def __getitem__(self, dct_key):
-        return self.dct[dct_key]
-    
-    @property
-    def _df(self):
-        # merge 완료된 dataframe 출력
-        tmp_dct = sum([self._adjust_idx(self.dct[x]._df) for x in self.dct])
-        return tmp_dct
-        
+    # Output Data
     @property
     def df(self):
-        # merge 완료된 dataframe을 요약하여 출력
-        tmp_dct = sum([self._adjust_idx(self.dct[x].df) for x in self.dct])
-        return tmp_dct
-    
-    def dfcol(self, col, col_criteria=False):
-        # column명 구분에 따라 dictionary 데이터를 취합
-        if isinstance(col, str):
-            tmp_dct = pd.DataFrame({x: self.dct[x]._df.loc[:, col] 
-                                   for x in self.dct})
-        elif isinstance(col, list):
-            col_lst = col
-            if col_criteria:
-                tmp_dct = pd.DataFrame({(col, x): self.dct[x]._df.loc[:, col] 
-                                       for col in col_lst
-                                       for x in self.dct})
-            else:
-                tmp_dct = pd.DataFrame({(x, col): self.dct[x]._df.loc[:, col] 
-                                       for x in self.dct
-                                       for col in col_lst})
-        tmp_dct.fillna(0, inplace=True)
-        return tmp_dct
-    
-    ##################################
-    #### OUTPUT DATA ####
-    
-    def _set_outputfunc(self):
         """
-        Column명을 기준으로 데이터프레임에서 요구되는 값을 찾아서 반환
+        Return the summarised dataframe
+        Return columns : DFCOL_smry
+            ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
         """
-        self.add_scdd = self.add_scdd(self)
-        self.add_scdd_cum = self.add_scdd_cum(self)
-        self.sub_scdd = self.sub_scdd(self)
-        self.sub_scdd_cum = self.sub_scdd_cum(self)
-        self.bal_strt = self.bal_strt(self)
-        self.amt_add = self.amt_add(self)
-        self.amt_add_cum = self.amt_add_cum(self)
-        self.amt_sub = self.amt_sub(self)
-        self.amt_sub_cum = self.amt_sub_cum(self)
-        self.bal_end = self.bal_end(self)
-        self.add_rsdl_cum = self.add_rsdl_cum(self)
-        self.sub_rsdl_cum = self.sub_rsdl_cum(self)    
+        return self._df.loc[:, self.DFCOL_smry]
+    
+    @property
+    def jnl(self):
+        """
+        Return the journal dataframe
+        Return columns : JNLCOL
+            ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
+        """
+        return self._jnl
     
     class getattr_dfcol:
         """
-        데코레이터
-        클래스명을 column 이름으로 받아서 dataframe에서 index no, column name으로
-        값을 찾아서 반환함.
+        Decorator
+        Get a class name and use the class name as the column of dataframe.
         """
         def __call__(self, cls):
-            def init(self, sprinstnc):
-                self.sprinstnc = sprinstnc # super instance <- 상위 클래스의 인스턴스를 의미
+            def init(self, spristnc):
+                self.spristnc = spristnc
                 self.colname = cls.__name__
             cls.__init__ = init
             
-            def getitem(self, idxno):
-                return self.sprinstnc._df.loc[idxno, self.colname]
+            def getitem(self, val):
+                """
+                If val is an integer, return the data which is in index[val].
+                If val is a date, return the data which is on the date.
+                If val is a string, get the date data and return the data 
+                    which is on the date.
+                
+                Parameters
+                ----------
+                val: int, slice, date, date like string, 
+                    ex) 0, 1:3, datetime.date(2021, 4, 30), "2021-04", "2021-04-30"
+                
+                Return
+                ------
+                data from dataframe
+                Array of data from dataframe
+                
+                Examples
+                --------
+                >>> idx = Index("2021.01", "2021.12")
+                >>> acc = Account(idx, "loan")
+                >>> acc.addscd(idx[0], 1000)
+                >>> acc.subscd(idx[5], 800)
+                >>> acc.addamt(idx[1], 500, "acc_oprtg", "amount acc oprtg")
+                >>> acc.scd_in[idx[3]]
+                    0.0
+                >>> acc.scd_in[3]
+                    0.0
+                >>> acc.scd_in[0:3]
+                    2021-01-31    1000.0
+                    2021-02-28       0.0
+                    2021-03-31       0.0
+                    Name: scd_in, dtype: float64
+                >>> acc.scd_in[datetime.date(2021, 3, 31)]
+                    0.0
+                >>> acc.scd_in["2021.04"]
+                    2021-04-30    0.0
+                    Name: scd_in, dtype: float64
+                >>> acc.scd_in["2021"]
+                    2021-01-31    1000.0
+                    2021-02-28       0.0
+                    2021-03-31       0.0
+                    2021-04-30       0.0
+                    2021-05-31       0.0
+                    2021-06-30       0.0
+                    2021-07-31       0.0
+                    2021-08-31       0.0
+                    2021-09-30       0.0
+                    2021-10-31       0.0
+                    2021-11-30       0.0
+                    Name: scd_in, dtype: float64
+                """
+                if isinstance(val, date):
+                    return self.spristnc._df.loc[val, self.colname]
+                val = self.spristnc.index[val]
+                return self.spristnc._df.loc[val, self.colname]
             cls.__getitem__ = getitem
             
             return cls
-    
+        
     @getattr_dfcol()
-    class add_scdd:
+    class scd_in:
         pass
     @getattr_dfcol()
-    class add_scdd_cum:
+    class scd_in_cum:
         pass
     @getattr_dfcol()
-    class sub_scdd:
+    class scd_out:
         pass
     @getattr_dfcol()
-    class sub_scdd_cum:
+    class scd_out_cum:
         pass
     @getattr_dfcol()
     class bal_strt:
         pass
     @getattr_dfcol()
-    class amt_add:
+    class amt_in:
         pass
     @getattr_dfcol()
-    class amt_add_cum:
+    class amt_in_cum:
         pass
     @getattr_dfcol()
-    class amt_sub:
+    class amt_out:
         pass
     @getattr_dfcol()
-    class amt_sub_cum:
+    class amt_out_cum:
         pass
     @getattr_dfcol()
     class bal_end:
         pass
     @getattr_dfcol()
-    class add_rsdl_cum:
+    class rsdl_in_cum:
         pass
     @getattr_dfcol()
-    class sub_rsdl_cum:
+    class rsdl_out_cum:
         pass
         
-    #### OUTPUT DATA ####
-    ##################################
+    def _set_outputfunc(self):
+        self.scd_in = self.scd_in(self)
+        self.scd_in_cum = self.scd_in_cum(self)
+        self.scd_out = self.scd_out(self)
+        self.scd_out_cum = self.scd_out_cum(self)
+        self.bal_strt = self.bal_strt(self)
+        self.amt_in = self.amt_in(self)
+        self.amt_in_cum = self.amt_in_cum(self)
+        self.amt_out = self.amt_out(self)
+        self.amt_out_cum = self.amt_out_cum(self)
+        self.bal_end = self.bal_end(self)
+        self.rsdl_in_cum = self.rsdl_in_cum(self)
+        self.rsdl_out_cum = self.rsdl_out_cum(self)
     
+    def amt_rqrd_excs(self, index, rqrdamt, minunit = 100):
+        """
+        Calculate the additional amount required in excess of the balance.
+        
+        Parameters
+        ----------
+        index : index number
+        rqrdamt : int, float, total required amount
+        minunit : int, default 100, minimum adjustment unit
+        
+        Returns
+        -------
+        amt_rqrd : float
+        """
+        if isinstance(index, int): index = self.index[index]
+        amt_rqrd = max(rqrdamt - self.bal_end[index], 0)
+        amt_rqrd = round_up(amt_rqrd, -log10(minunit))
+        return amt_rqrd
     
+    # Account transfer
+    def send(self, index, amt, account, note=None):
+        """
+        Transfer the amount from this account to the opponent account.
+        
+        Parameters
+        ----------
+        index : index
+        amt : int, float, amount to transfer
+        account : account
+        note : str, default None
+        
+        Returns
+        -------
+        None
+        """
+        if isinstance(index, int): index = self.index[index]
+        self.subamt(index, amt, account.title, note)
+        account.addamt(index, amt, self.title, note)
+        
+    def __repr__(self):
+        """Return a string representation for this object."""
+        if len(self.df) > 15:
+            repr_df = f"{self.df.head(5)}\n...\n{self.df.tail(5)}"
+        else:
+            repr_df = f"{self.df}"
+        repr = f"<{self.title}>\n" + repr_df
+        return repr
+        
+
+class set_initial_account_decorator():
+    def __call__(self, cls):
+        def init(self, sprcls, title, byname=None, idx=None, crit="addscd",
+                 **kwargs):
+            self.sprcls = sprcls
+            if "_dct" not in sprcls.__dict__:
+                sprcls._dct = {}
+                sprcls.dct = sprcls._dct
+                
+                @property
+                def mrg(self):
+                    return Merge(sprcls.dct)
+                sprcls.mrg = mrg
+            
+            if title not in sprcls._dct:
+                acc = Account(idx, title)
+                sprcls._dct[title] = acc
+                setattr(sprcls, title, acc)
+                self.acc = acc
+                
+                acc.byname = byname
+                
+                self.crit = crit
+                self.kwargs = kwargs
+                
+            for key, item in kwargs.items():
+                setattr(self, key, item)
+            #self.istnc = getattr(self.sprcls, title)
+            self._initialize()
+        cls.__init__ = init
+        
+        return cls
+
+        
+@set_initial_account_decorator()
+class set_acc:
+    """
+    Set initial account. 
+    Create and initiaize an account.
+    
+    Parameters
+    ----------
+    sprcls : an account on a higher level
+    title : a name of the account
+    byname : a second name of the account
+    idx : index, default None
+    crit : str, default "addscd"
+    
+    Returns
+    -------
+    
+    init(self, sprcls, title, byname=None, idx=None, crit="addscd",
+         **kwargs: None)
+    """
+    def _initialize(self):
+        pass
+        
+@set_initial_account_decorator()
+class set_once:
+    """
+    Set initial account. 
+    Create and initiaize an account.
+    Input a data(one scheduel, one amount).
+    
+    Parameters
+    ----------
+    sprcls : an account on a higher level
+    title : a name of the account
+    byname : a second name of the account
+    idx : index, default None
+    crit : str, default "addscd" or "subscd"
+    scdidx : a schedule index
+    amtttl : an amount to input on
+    
+    Returns
+    -------
+    
+    init(self, sprcls, title, byname=None, idx=None, crit="addscd",
+         **kwargs: amtttl, scdidx)
+    """
+    def _initialize(self):
+        if self.crit == "addscd":
+            self.acc.addscd(self.scdidx, self.amtttl)
+        elif self.crit == "subscd":
+            self.acc.subscd(self.scdidx, self.amtttl)
+            
+@set_initial_account_decorator()
+class set_scd:
+    """
+    Set initial account. 
+    Create and initiaize an account.
+    Input a data(scheduel list, amount list).
+    
+    Parameters
+    ----------
+    sprcls : an account on a higher level
+    title : a name of the account
+    byname : a second name of the account
+    idx : index, default None
+    crit : str, default "addscd" or "subscd"
+    scdidx : a schedule index list
+    scdamt : an amount list to input on
+    
+    Returns
+    -------
+    
+    init(self, sprcls, title, byname=None, idx=None, crit="addscd", 
+         **kwargs: scdamt, scdidx)
+    """
+    def _initialize(self):
+        if self.crit == "addscd":
+            self.acc.addscd(self.scdidx, self.scdamt)
+        elif self.crit == "subscd":
+            self.acc.subscd(self.scdidx, self.scdamt)
+        
+@set_initial_account_decorator()
+class set_rate:
+    """
+    Set initial account. 
+    Create and initiaize an account.
+    Input a data(scheduel list, amount list).
+    
+    Parameters
+    ----------
+    sprcls : an account on a higher level
+    title : a name of the account
+    byname : a second name of the account
+    idx : index, default None
+    crit : str, default "addscd" or "subscd"
+    scdidx : a schedule index
+    amt : an amount to apply a rate on
+    rate : a rate to apply to an amt
+    
+    Returns
+    -------
+    init(self, sprcls, title, byname=None, idx=None, crit="addscd", 
+         **kwargs: amt, rate, scdidx)
+    """
+    def _initialize(self):
+        scdamt = self.amt * self.rate
+        if self.crit == "addscd":
+            self.acc.addscd(self.scdidx, scdamt)
+        elif self.crit == "subscd":
+            self.acc.subscd(self.scdidx, scdamt)      
+        
+        
+class Merge(object):
+    def __init__(self, dct:dict):
+        self._dct = dct
+        self._set_mainidx()
+        self._set_outputfunc()
+        
+    @property
+    def _df(self):
+        dflst = [self._adjust_idx(item._df) for key, item in self._dct.items()]
+        return sum(dflst)
+        
+    @property
+    def df(self):
+        dflst = [self._adjust_idx(item.df) for key, item in self._dct.items()]
+        return sum(dflst)
+        
+    @property
+    def dct(self):
+        return self._dct
+        
+    @property
     def title(self):
-        # dictionary 데이터 상 title 값 취합
-        tmp_dct = pd.Series({x: self.dct[x].title for x in self.dct})
-        return tmp_dct
-    
-    def tag(self):
-        # dictionary 데이터 상 tag 값 취합
-        tmp_dct = pd.Series({x: self.dct[x].tag for x in self.dct})
-        return tmp_dct
-    
-    def note(self):
-        # dictionary 데이터 상 note 값 취합
-        tmp_dct = pd.Series({x: self.dct[x].note for x in self.dct})
-        return tmp_dct
-
+        dfdct = Series({key: item.title for key, item in self._dct.items()})
+        return dfdct
+        
     def __getattr__(self, attr):
-        """
-        기존에 정의되어 있지 않은 속성이 입력될 경우, Account 객체를 조회하여 속성
-        존재 여부를 확인함.
-        """
-        return [dctval.__dict__[attr] for dctval in self.dct.values()]
-    
-    #### 작성 중 ####
-    # 기준 index 설정
-    def _set_idxmain(self):
-        idx_len = 0
-        self.idx_main = None
-        for x in self.dct:
-            tmpidx = self.dct[x].df.index
-            if len(tmpidx) > idx_len:
-                idx_len = len(tmpidx)
-                self.idx_main = tmpidx
-    
-    # index 조정
+        return [item.__dict__[attr] for key, item in self._dct.items()]
+        
+    def _set_mainidx(self):
+        mainidx = []
+        for key, item in self._dct.items():
+            if len(item.index) > len(mainidx):
+                mainidx = item.index
+        self.index = mainidx
+        self.index = self.index.arr
+        
     def _adjust_idx(self, tmpdf):
-        if len(tmpdf.index) < len(self.idx_main):
-            return DataFrame(tmpdf, index=self.idx_main).fillna(0)
+        if len(tmpdf.index) < len(self.index):
+            return DataFrame(tmpdf, index=self.index).fillna(0)
         return tmpdf
-    #### 작성 중 ####
         
-
-class Collect(object):
-    def __init__(self, index, data_json=None, adrs_json=None):
-        self.index = index
-        self._dct = {}
-        self.data_json = data_json
-        self.adrs_json = adrs_json
-        
-        self._read_json(data_json=self.data_json, adrs_json=self.adrs_json)
-        self._create_account()
-        self._acc_addscdd()
-        
-    def _read_json(self, data_json=None, adrs_json=None):
-        if data_json==None and adrs_json is not None:
-            with open(adrs_json, "r") as f:
-                self._dct = json.load(f)
-        elif data_json is not None and adrs_json is None:
-            self._dct = data_json
-    
-    def _create_account(self):
-        lst_key = self.lfkey("title", return_val="dict")
-        
-        for dct in lst_key:
-            if "account" not in dct:
-                if "tag" in dct:
-                    tag = dct["tag"]
-                else:
-                    tag = None
-                
-                if "balstrt" in dct:
-                    balstrt = dct["balstrt"]
-                else:
-                    balstrt = 0
-                
-                if "note" in dct:
-                    note = dct["note"]
-                else:
-                    note = ""
-                
-                dct["account"] = Account(self.index, dct["title"], tag, balstrt, note)
-                
-
-    def _idxAdjuster(self, idxstr):
-        idxstr = "self.index." + idxstr
-        return eval(idxstr)
-    
-    def accReader(self, accstr):
-        lst = accstr.split(",")
-        idx = self._idxAdjuster(lst[1])
-        val = self.acc(lst[0])._df.loc[idx, lst[2]]
-        return val
-        
-    def amtReader(self, amtval):
-        if type(amtval) is str:
-            lst = amtval.split(":")
-            if lst[0] == "account":
-                return self.accReader(lst[1])
-        else:
-            return amtval
-        
-    def _acc_addscdd(self):
-        _lst = self.lfkey("account", return_val="dict")
-        for cst in _lst:                
-            if "scdd_period" in cst:
-                cst_sp = cst["scdd_period"] 
-                _mode = cst_sp["mode"]
-                
-                if "index_name" in cst_sp:
-                    _index_name = cst_sp["index_name"]
-                    _index = self._idxAdjuster(_index_name).index
-                    cst_sp["index"] = _index
-                elif "index" in cst_sp:
-                    _index = [self._idxAdjuster(x) for x in cst_sp["index"]]
-                    cst_sp["index"] = _index
-                _len = len(_index)
-                
-                if "amtlst" in cst_sp:
-                    _lstamt = cst_sp["amtlst"]
-                elif "amtunit" in cst_sp:
-                    _lstamt = cst_sp["amtunit"]
-                elif "amtttl" in cst_sp:
-                    _lstamt = cst_sp["amtttl"] / _len
-                elif "amtclt" in cst_sp:
-                    _lstamt = sum([self.amtReader(x) for x in cst_sp["amtclt"]])
-                    
-                if "rate" in cst_sp:
-                    _rate = cst_sp["rate"]
-                    if type(_lstamt) is list:
-                        _lstamt = [x * y for x, y in zip(_lstamt, _rate)]
-                    else:
-                        _lstamt = _lstamt * _rate
-                
-                if _mode == "add":
-                    cst["account"].addscdd(_index, _lstamt)
-                elif _mode == "sub":
-                    cst["account"].subscdd(_index, _lstamt)
-
-
-    def lfkey(self, key_name, return_val="item", dct=None):
+    class getattr_dfcol:
         """
-        PARAMETERS
-        - key_name : key name of dictionary which is looking for
-        - return_val : 
-            + "item" : return items of the dictionary
-            + "dict" : return the dictionary itself
-        - dct : dictionary on which key is looking for
+        Decorator
+        Get a class name and use the class name as the column of dataframe.
         """
-        lst = []
-        if dct is None:
-            dct = self._dct
-        for key, item in dct.items():
-            if key == key_name:
-                if return_val == "item":
-                    lst.append(item)
-                elif return_val == "dict":
-                    lst.append(dct)
-            if type(item) == dict:
-                tmp_lst = self.lfkey(key_name, return_val=return_val, dct=item)
-                lst.extend(tmp_lst)
-        return lst
+        def __call__(self, cls):
+            def init(self, spristnc):
+                self.spristnc = spristnc
+                self.colname = cls.__name__
+            cls.__init__ = init
+            
+            def getitem(self, val):
+                """
+                If val is an integer, return the data which is in index[val].
+                If val is a date, return the data which is on the date.
+                If val is a string, get the date data and return the data 
+                    which is on the date.
+                
+                Parameters
+                ----------
+                val: int, slice, date, date like string, 
+                    ex) 0, 1:3, datetime.date(2021, 4, 30), "2021-04", "2021-04-30"
+                
+                Return
+                ------
+                data from dataframe
+                Array of data from dataframe
+                
+                Examples
+                --------
+                >>> idx = Index("2021.01", "2021.12")
+                >>> acc = Account(idx, "loan")
+                >>> acc.addscd(idx[0], 1000)
+                >>> acc.subscd(idx[5], 800)
+                >>> acc.addamt(idx[1], 500, "acc_oprtg", "amount acc oprtg")
+                >>> acc.scd_in[idx[3]]
+                    0.0
+                >>> acc.scd_in[3]
+                    0.0
+                >>> acc.scd_in[0:3]
+                    2021-01-31    1000.0
+                    2021-02-28       0.0
+                    2021-03-31       0.0
+                    Name: scd_in, dtype: float64
+                >>> acc.scd_in[datetime.date(2021, 3, 31)]
+                    0.0
+                >>> acc.scd_in["2021.04"]
+                    2021-04-30    0.0
+                    Name: scd_in, dtype: float64
+                >>> acc.scd_in["2021"]
+                    2021-01-31    1000.0
+                    2021-02-28       0.0
+                    2021-03-31       0.0
+                    2021-04-30       0.0
+                    2021-05-31       0.0
+                    2021-06-30       0.0
+                    2021-07-31       0.0
+                    2021-08-31       0.0
+                    2021-09-30       0.0
+                    2021-10-31       0.0
+                    2021-11-30       0.0
+                    Name: scd_in, dtype: float64
+                """
+                if isinstance(val, date):
+                    return self.spristnc._df.loc[val, self.colname]
+                val = self.spristnc.index[val]
+                return self.spristnc._df.loc[val, self.colname]
+            cls.__getitem__ = getitem
+            
+            return cls
+        
+    @getattr_dfcol()
+    class scd_in:
+        pass
+    @getattr_dfcol()
+    class scd_in_cum:
+        pass
+    @getattr_dfcol()
+    class scd_out:
+        pass
+    @getattr_dfcol()
+    class scd_out_cum:
+        pass
+    @getattr_dfcol()
+    class bal_strt:
+        pass
+    @getattr_dfcol()
+    class amt_in:
+        pass
+    @getattr_dfcol()
+    class amt_in_cum:
+        pass
+    @getattr_dfcol()
+    class amt_out:
+        pass
+    @getattr_dfcol()
+    class amt_out_cum:
+        pass
+    @getattr_dfcol()
+    class bal_end:
+        pass
+    @getattr_dfcol()
+    class rsdl_in_cum:
+        pass
+    @getattr_dfcol()
+    class rsdl_out_cum:
+        pass
+        
+    def _set_outputfunc(self):
+        self.scd_in = self.scd_in(self)
+        self.scd_in_cum = self.scd_in_cum(self)
+        self.scd_out = self.scd_out(self)
+        self.scd_out_cum = self.scd_out_cum(self)
+        self.bal_strt = self.bal_strt(self)
+        self.amt_in = self.amt_in(self)
+        self.amt_in_cum = self.amt_in_cum(self)
+        self.amt_out = self.amt_out(self)
+        self.amt_out_cum = self.amt_out_cum(self)
+        self.bal_end = self.bal_end(self)
+        self.rsdl_in_cum = self.rsdl_in_cum(self)
+        self.rsdl_out_cum = self.rsdl_out_cum(self)
 
-
-    def __getitem__(self, key_name):
-        if key_name == "all":
-            return self._dct
+    def __repr__(self):
+        """Return a string representation for this object."""
+        repr_key = []
+        for key in self.dct.keys():
+            repr_key.append(key)
+        
+        if len(self.df) > 15:
+            repr_df = f"{self.df.head(5)}\n...\n{self.df.tail(5)}"
         else:
-            return self.lfkey(key_name)[0]
-            
-            
-    def acc(self, key_name):
-        tmp_lst = self.lfkey(key_name)
+            repr_df = f"{self.df}"
+        repr = f"Accounts: {repr_key}\n" + repr_df
+        return repr
         
-        if len(tmp_lst) == 1:
-            try:
-                return tmp_lst[0]["account"]
-            except:
-                return None
-        elif len(tmp_lst) != 1:
-            raise ValueError
-            
-
         
-
-class Intlz_accounts:
-    def __init__(self,
-                 index, # index
-                 accname, # list
-                 ):
-        self.index = index
-        self.accname = accname
-
-        self.dct = {}
-        self._intlz()
         
-    def __len__(self):
-        return len(self.accname)
         
-    def _intlz(self):
-        for no, accname in enumerate(self.accname):
-            tmp_acc = Account(self.index, title=accname)
-            self.dct[accname] = tmp_acc
-            setattr(self, accname, tmp_acc)
-            
-        self.ttl = Merge(self.dct)
-        for no, accname in enumerate(self.accname):
-            setattr(self.ttl, accname, getattr(self, accname))
-                 
-                 
-                 
-                 
-                 
-     

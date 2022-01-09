@@ -99,22 +99,23 @@ class Write(object):
     def dct_loan(self, ln):
         tmpdct = {}
         tmpdct["Notional_" + ln.title] = \
-            {"sub_scdd": ln.ntnl.df.sub_scdd,
-             "add_scdd": ln.ntnl.df.add_scdd,
-             "amt_sub" : ln.ntnl.df.amt_sub,
-             "amt_add" : ln.ntnl.df.amt_add,
-             "bal_end" : ln.ntnl.df.bal_end}
-        if ln.rate_fee > 0:
-            tmpdct["Fee_" + ln.title] = \
-                {"amt_add" : ln.fee.df.amt_add,
-                 "bal_end" : ln.fee.df.bal_end}
+            {"scd_out": ln.ntnl._df.scd_out,
+             "scd_in": ln.ntnl._df.scd_in,
+             "amt_out" : ln.ntnl._df.amt_out,
+             "amt_in" : ln.ntnl._df.amt_in,
+             "bal_end" : ln.ntnl._df.bal_end}
+        
         tmpdct["IR_" + ln.title] = \
-            {"amt_add" : ln.IR.df.amt_add,
-             "bal_end" : ln.IR.df.bal_end}
-        if ln.rate_fob > 0:
+            {"amt_in" : ln.IR._df.amt_in,
+             "bal_end" : ln.IR._df.bal_end}
+        if 'fee' in ln.fnkey:
+            tmpdct["Fee_" + ln.title] = \
+                {"amt_in" : ln.fee._df.amt_in,
+                 "bal_end" : ln.fee._df.bal_end}
+        if 'fob' in ln.fnkey:
             tmpdct["Fob_" + ln.title] = \
-                {"amt_add" : ln.fob.df.amt_add,
-                 "bal_end" : ln.fob.df.bal_end}
+                {"amt_in" : ln.fob._df.amt_in,
+                 "bal_end" : ln.fob._df.bal_end}
         return tmpdct
 
         
