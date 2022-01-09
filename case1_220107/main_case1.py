@@ -5,7 +5,8 @@ Created on Fri Dec 10 13:15:43 2021
 
 @author: KP_Hong
 """
-
+import os
+import sys
 import pickle
 import xlsxwriter
 from datetime import datetime
@@ -13,6 +14,9 @@ from importlib import import_module
 import pandas as pd
 from pandas import Series, DataFrame
 import numpy as np
+
+directory = '/'.join(os.getcwd().split('/')[:-1])
+sys.path.append(directory)
 
 pd.set_option('display.max_row', 200)
 pd.set_option('display.max_columns', 100)
@@ -24,17 +28,19 @@ from cafle.genfunc import EmptyClass
 
 
 #### Initial Setting ####
-CASE = "case1_astn_220107" # directory name
+
+dirname = os.getcwd().split('/')[-1]
+CASE = dirname # directory name
 VERSION = "v1.0"
 
-ASTNFNC = ".astn_financing_211224_Golf v1"
-ASTNSLS = ".astn_sales_211224_Golf v1"
-ASTNCST = ".astn_cost_211224_Golf v1"
-ASTNACC = ".astn_account_211224_Golf v1"
-RESULT  = ".output_result_211224_Golf v1"
+ASTNFNC = ".astn_financing"
+ASTNSLS = ".astn_sales"
+ASTNCST = ".astn_cost"
+ASTNACC = ".astn_account"
+RESULT  = ".astn_output"
 DATE = datetime.now().strftime('%y%m%d')
 #DATE = "211221"
-PRTNAME = "/"+CASE+"_"+VERSION+"_"+DATE+".xlsx"
+PRTNAME = CASE+"_"+VERSION+"_"+DATE+".xlsx"
 astn = EmptyClass()
 
 
@@ -257,7 +263,7 @@ for idxno in idx:
 #### Print out the results ####
 rslt_mdl    = import_module(CASE + RESULT)
 
-rslt        = rslt_mdl.WriteCF(CASE + PRTNAME, fnc)
+rslt        = rslt_mdl.WriteCF(PRTNAME, fnc)
 
         
         
