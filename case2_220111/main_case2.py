@@ -45,7 +45,7 @@ astn = EmptyClass()
 
 
 #### Read Financing Data ####
-fnc_mdl = import_module(CASE + ASTNFNC)
+fnc = import_module(CASE + ASTNFNC)
 fnc = {}
 fnc["idx"] = fnc_mdl.Idx()
 idx = fnc["idx"].idx
