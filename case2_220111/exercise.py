@@ -28,7 +28,6 @@ from cafle.genfunc import EmptyClass
 
 
 #### Initial Setting ####
-
 dirname = os.getcwd().split('/')[-1]
 CASE = dirname # directory name
 VERSION = "v1.0"
@@ -44,7 +43,9 @@ PRTNAME = "rslt_"+VERSION+"_"+DATE+".xlsx"
 astn = EmptyClass()
 
 
+#### Read Assumption Data ####
 fnc = import_module(CASE + ASTNFNC).Intlz()
+rnt = import_module(CASE + ASTNSLS).Intlz(fnc.idx)
 
 
 

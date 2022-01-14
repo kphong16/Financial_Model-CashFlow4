@@ -47,22 +47,6 @@ class Idx(object):
                                 freq    = self.freq)
         
 
-class Equity(object):
-    def __init__(self, cidx):
-        self.cidx = cidx
-        self._input_initial_data()
-        
-    def _input_initial_data(self):
-        self.title = "equity"
-        self.amt_ntnl = 0
-        self.amt_intl = 0
-        
-        self.equity = cf.Loan(title    = self.title,
-                              index    = self.cidx.idx,
-                              amt_ntnl = self.amt_ntnl,
-                              amt_intl = self.amt_intl)
-        
-
 class Loan(object):
     def __init__(self, cidx):
         self.cidx = cidx
@@ -71,8 +55,6 @@ class Loan(object):
         self._input_initial_data()
         
     def _input_initial_data(self):
-        ###################
-        #### Loan Data ####
         self.title      = ["tra"  ]
         self.rnk        = [0      ]
         self.amt_ntnl   = [100_000]
@@ -122,8 +104,6 @@ class LoanCst(object):
     def dct(self):
         return self._dct
 
-    ########################################
-    #### Input Data                     ####
     def _set_initial_data(self):
         ## Arangement Fee ##
         cf.set_rate(self, "arngfee", "주관수수료", self.cloan.idx,
@@ -140,10 +120,8 @@ class Fund(object):
         self._input_initial_data()
         
     def _input_initial_data(self):
-        ###################
-        #### Loan Data ####
-        self.title      = ["cmn"]
-        self.rnk        = [0]
+        self.title      = ["cmn" ]
+        self.rnk        = [     0]
         self.amt_ntnl   = [40_000]
         self.amt_intl   = [40_000]
         self.rate_fee   = [ 0.010] # 초기 펀드 설정비
@@ -205,9 +183,6 @@ class Intlz(object):
         
         self.dct['idx'] = Idx()
         setattr(self, 'idx', self.dct['idx'].idx)
-        
-        self.dct['equity'] = Equity(self.dct['idx'])
-        setattr(self, 'equity', self.dct['equity'].equity)
         
         self.dct['loan'] = Loan(self.dct['idx'])
         setattr(self, 'loan', self.dct['loan'].loan)
