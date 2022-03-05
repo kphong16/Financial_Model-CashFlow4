@@ -29,10 +29,19 @@ from datetime import date
 from functools import wraps
 
 from .genfunc import *
+from .genfunc import listwrapper
 from .index import Index, PrjtIndex
 
 __all__ = ['Account', 'Merge',
            'set_acc', 'set_once', 'set_scd', 'set_rate']
+
+DFCOL      = ['scd_in', 'scd_in_cum', 'scd_out', 'scd_out_cum', 
+                           'bal_strt', 'amt_in', 'amt_in_cum', 
+                           'amt_out', 'amt_out_cum', 'bal_end',
+                           'rsdl_in_cum', 'rsdl_out_cum']
+DFCOL_smry = ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
+DFCOL_inpt = ['scd_in', 'scd_out', 'amt_in', 'amt_out']
+JNLCOL     = ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
 
 class Account(object):
     """
@@ -88,69 +97,75 @@ class Account(object):
     send(index, amt, account, note=None)
         transfer the amount from this account to the opponent account.
     """
+    
+    
+    
     def __init__(self,
+                 data=None,
                  index=None,
-                 title=None,
-                 balstrt=0
+                 **kwargs
                  ):
+        """             
+        DFCOL      = ['scd_in', 'scd_in_cum', 'scd_out', 'scd_out_cum', 
+                           'bal_strt', 'amt_in', 'amt_in_cum', 
+                           'amt_out', 'amt_out_cum', 'bal_end',
+                           'rsdl_in_cum', 'rsdl_out_cum']
+        DFCOL_smry = ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
+        DFCOL_inpt = ['scd_in', 'scd_out', 'amt_in', 'amt_out']
+        JNLCOL     = ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
+        """             
+        if index is None:
+            if isinstance(data, DataFrame):
+                _index = DataFrame.index
+            else:
+                _index = None
         if isinstance(index, Index):
-            self.index = index
+            _index = index
         elif isinstance(index, PrjtIndex):
-            self.index = index.main
+            _index = index.main
+        elif isinstance(index, list):
+            _index = list(index)
+        elif is_iterable(index):
+            _index = list(index)
+        
+        if _index is None:
+            _df = DataFrame(columns=DFCOL)
+        else:
+            _df = DataFrame(np.zeros([len(_index), len(DFCOL)]),
+                            columns = DFCOL,
+                            index = _index)
             
-        self.title = title
-        self.balstrt = balstrt
+        if isinstance(data, DataFrame):
+            for key in data.columns:
+                if key in DFCOL_inpt:
+                    _df.loc[data.index, key] = data[key]
+                else:
+                    raise ValueError
+        
+        _jnl = DataFrame(columns = JNLCOL)
+        
+        self.index = _index
+        self._df = _df
+        self._jnl = _jnl
+        
+        for key, item in kwargs.items():
+            kwargsitem = ['title', 'byname']
+            if key in kwargsitem:
+                setattr(self, key, item)
         
         self._intlz()
+        self._cal_bal()
         
     def _intlz(self):
         # Initial Setting Function
-        self.DFCOL = ['scd_in', 'scd_in_cum', 'scd_out', 'scd_out_cum', 
-                      'bal_strt', 'amt_in', 'amt_in_cum', 
-                      'amt_out', 'amt_out_cum', 'bal_end',
-                      'rsdl_in_cum', 'rsdl_out_cum']
-        self.DFCOL_smry = ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
-        self.JNLCOL = ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
-        self._setdf()
-        self._setjnl()
         self._set_outputfunc()
-    
-    def _setdf(self):
-        # Initialize DataFrame
-        self._df = DataFrame(np.zeros([len(self.index), len(self.DFCOL)]), \
-                             columns = self.DFCOL, \
-                             index = self.index)
-        self._df.loc[self.index[0], 'bal_strt'] = self.balstrt
         
-        self._cal_bal()
-        
-    def _setjnl(self):
-        # Initialize Journal
-        self._jnl = DataFrame(columns = self.JNLCOL)
-        
-    # Decorator
-    def listwrapper(func):
-        @wraps(func)
-        def wrapped(self, *args):
-            is_iter = True
-            for arg in args:
-                if is_iterable(arg) is False:
-                    is_iter = False
-            if is_iter is True:
-                ilen = len(args[0])
-                for i in range(ilen):
-                    new_args = []
-                    for val in args:
-                        new_args = new_args + [val[i]]
-                    new_args = tuple(new_args)
-                    func(self, *new_args)
-            else:
-                new_args = args
-                func(self, *new_args)
-        return wrapped
         
     # Calculate Data Balance
     def _cal_bal(self):
+        if self.index is None:
+            return None
+        
         self._df.scd_in_cum = self._df.scd_in.cumsum()
         self._df.scd_out_cum = self._df.scd_out.cumsum()
         self._df.amt_in_cum = self._df.amt_in.cumsum()
@@ -298,7 +313,7 @@ class Account(object):
         """
         if isinstance(index, int): index = self.index[index]
         tmpjnl = DataFrame([[amt_in, amt_out, rcvfrm, payto, note]], 
-                           columns=self.JNLCOL, index=[index])
+                           columns=JNLCOL, index=[index])
         self._jnl = pd.concat([self._jnl, tmpjnl])
     
     def __getattr__(self, attr):
@@ -313,7 +328,7 @@ class Account(object):
         Return columns : DFCOL_smry
             ['bal_strt', 'amt_in', 'amt_out', 'bal_end']
         """
-        return self._df.loc[:, self.DFCOL_smry]
+        return self._df.loc[:, DFCOL_smry]
     
     @property
     def jnl(self):
@@ -324,6 +339,7 @@ class Account(object):
         """
         return self._jnl
     
+    # Decorator
     class getattr_dfcol:
         """
         Decorator
@@ -465,7 +481,6 @@ class Account(object):
         amt_rqrd = round_up(amt_rqrd, -log10(minunit))
         return amt_rqrd
     
-    # Account transfer
     def send(self, index, amt, account, note=None):
         """
         Transfer the amount from this account to the opponent account.
@@ -482,16 +497,28 @@ class Account(object):
         None
         """
         if isinstance(index, int): index = self.index[index]
-        self.subamt(index, amt, account.title, note)
-        account.addamt(index, amt, self.title, note)
+        if 'title' in account.__dict__:
+            account_title = account.title
+        else:
+            account_title = None
+        self.subamt(index, amt, account_title, note)
+        
+        if 'title' in self.__dict__:
+            self_title = self.title
+        else:
+            self_title = None
+        account.addamt(index, amt, self_title, note)
         
     def __repr__(self):
         """Return a string representation for this object."""
         if len(self.df) > 15:
-            repr_df = f"{self.df.head(5)}\n...\n{self.df.tail(5)}"
+            repr = f"{self.df.head(5)}\n...\n{self.df.tail(5)}"
         else:
-            repr_df = f"{self.df}"
-        repr = f"<{self.title}>\n" + repr_df
+            repr = f"{self.df}"
+        if 'byname' in self.__dict__:
+            repr = f"<{self.byname}>\n" + repr
+        if 'title' in self.__dict__:
+            repr = f"<{self.title}>\n" + repr
         return repr
         
 

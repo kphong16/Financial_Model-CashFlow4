@@ -17,6 +17,7 @@ Area : transform between m2 and PY units.
 
 import math
 from datetime import datetime
+from functools import wraps
 from pandas.api.types import is_numeric_dtype
 
 __all__ = ['PY', 'Area', 'EmptyClass', 'is_iterable', 'limited', 'rounding', 
@@ -219,7 +220,26 @@ def log10(val):
             return tmpval
     
     
-
+# Decorator
+def listwrapper(func):
+    @wraps(func)
+    def wrapped(self, *args):
+        is_iter = True
+        for arg in args:
+            if is_iterable(arg) is False:
+                is_iter = False
+        if is_iter is True:
+            ilen = len(args[0])
+            for i in range(ilen):
+                new_args = []
+                for val in args:
+                    new_args = new_args + [val[i]]
+                new_args = tuple(new_args)
+                func(self, *new_args)
+        else:
+            new_args = args
+            func(self, *new_args)
+    return wrapped
     
     
     

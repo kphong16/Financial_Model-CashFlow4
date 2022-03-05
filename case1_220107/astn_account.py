@@ -26,12 +26,12 @@ class Acc(object):
         _ipt = {"title"         : "oprtg",
                 "byname"        : "운영계좌"}
         self._dct["oprtg"] = _ipt
-        self.oprtg = Account(idx, self._dct["oprtg"]["title"])
+        self.oprtg = Account(self._dct["oprtg"]["title"], idx)
         
         ## Repayment Account ##
         _ipt = {"title"         : "repay",
                 "byname"        : "상환계좌"}
         self._dct["repay"] = _ipt
-        self.repay = Account(idx, self._dct["repay"]["title"])
+        self.repay = Account(self._dct["repay"]["title"], idx)
 
         

@@ -155,14 +155,14 @@ class Loan(object):
         
     def _intlz(self):
         for key in self.fnkey:
-            setattr(self, key, Account(self.index, self.title))
-        self.ntnl = Account(self.index, self.title)
+            setattr(self, key, Account(self.index, title=self.title))
+        self.ntnl = Account(self.index, title=self.title)
         self.ntnl.amt = self.amt_ntnl
         self.ntnl.subscd(self.idxfn[0], self.ntnl.amt)
         self.ntnl.addscd(self.idxfn[-1], self.ntnl.amt)
         self._dct['ntnl'] = self.ntnl
         
-        self.IR = Account(self.index, self.title)
+        self.IR = Account(self.index, title=self.title)
         self.IR.rate = self.rate_IR
         self.IR.cycle = self.cycle_IR
         self.IR.rate_cycle = self.IR.rate * self.IR.cycle / 12
@@ -170,14 +170,14 @@ class Loan(object):
         
         # Fee
         if 'fee' in self.fnkey:
-            self.fee = Account(self.index, self.title)
+            self.fee = Account(self.index, title=self.title)
             self.fee.rate = self.rate_fee
             self.fee.amt = self.ntnl.amt * self.fee.rate
             self.dct['fee'] = self.fee
         
         # Fob
         if 'fob' in self.fnkey:
-            self.fob = Account(self.index, self.title)
+            self.fob = Account(self.index, title=self.title)
             self.fob.rate = self.rate_fob
             self.fob.cycle = self.cycle_IR
             self.fob.rate_cycle = self.fob.rate * self.fob.cycle / 12
