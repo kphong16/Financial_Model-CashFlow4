@@ -81,7 +81,10 @@ class WriteCF:
         ## Write operating costs
         tmpdct = wb.extnddct(
             tmpdct,
-            {"Cost" : {key: item.df.amt_in for key, item in cost.dct.items()}}
+            {keysgmnt: {item.byname: item.df.amt_in for key, item in itemsgmnt.items()} 
+                for keysgmnt, itemsgmnt in cost.dctsgmnt.items()}
+            
+            #{"Cost" : {key: item.df.amt_in for key, item in cost.dct.items()}}
             #{key: {key2: item2.df.amt_in for key2, item2 in item.dct.items()}
             #for key, item in cost.dct.items()}
             )
