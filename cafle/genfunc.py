@@ -219,7 +219,49 @@ def log10(val):
         else:
             return tmpval
     
+
+# Decorator
+def listwrapper(func):
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        is_iter = True
+        for arg in args:
+            if is_iterable(arg) is False:
+                is_iter = False
+        for item in kwargs.values():
+            if is_iterable(item) is False:
+                is_iter = False
+                
+        if is_iter is True:
+            ilen = 0
+            for arg in args:
+                if len(arg) > ilen:
+                    ilen = len(arg)
+            for item in kwargs.values():
+                if len(item) > ilen:
+                    ilen = len(item)
+            
+            for i in range(ilen):
+                new_args = []
+                new_kwargs = {}
+                
+                for val in args:
+                    new_args = new_args + [val[i]]
+                new_args = tuple(new_args)
+                
+                for key, item in kwargs.items():
+                    new_kwargs[key] = item 
+                
+                func(self, *new_args, **new_kwargs)
+        else:
+            new_args = args
+            new_kwargs = kwargs
+            func(self, *new_args, **new_kwargs)
+    return wrapped
     
+
+
+"""
 # Decorator
 def listwrapper(func):
     @wraps(func)
@@ -240,7 +282,7 @@ def listwrapper(func):
             new_args = args
             func(self, *new_args)
     return wrapped
-    
+"""
     
     
     

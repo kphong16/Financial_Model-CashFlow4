@@ -30,7 +30,12 @@ from functools import wraps
 
 from .genfunc import *
 from .genfunc import listwrapper
-from .index import Index, PrjtIndex
+from .index import (
+    RangeIndex,
+    DateIndex,
+    date_range,
+    str_to_date,
+    )
 
 __all__ = ['Account', 'Merge',
            'set_acc', 'set_once', 'set_scd', 'set_rate']
@@ -98,7 +103,7 @@ class Account(object):
         transfer the amount from this account to the opponent account.
     """
     
-    
+    _index = None
     
     def __init__(self,
                  data=None,
@@ -114,19 +119,24 @@ class Account(object):
         DFCOL_inpt = ['scd_in', 'scd_out', 'amt_in', 'amt_out']
         JNLCOL     = ['amt_in', 'amt_out', 'rcvfrm', 'payto', 'note']
         """             
+        
+        if isinstance(data, (DateIndex, RangeIndex)) and index is None:
+            index = data
+            data = None
+        
         if index is None:
             if isinstance(data, DataFrame):
                 _index = DataFrame.index
             else:
-                _index = None
-        if isinstance(index, Index):
+                _index = self.__class__._index
+        elif isinstance(index, RangeIndex):
             _index = index
-        elif isinstance(index, PrjtIndex):
-            _index = index.main
-        elif isinstance(index, list):
-            _index = list(index)
-        elif is_iterable(index):
-            _index = list(index)
+        elif isinstance(index, DateIndex):
+            _index = index
+        #elif isinstance(index, list):
+        #    _index = list(index)
+        #elif is_iterable(index):
+        #    _index = list(index)
         
         if _index is None:
             _df = DataFrame(columns=DFCOL)
@@ -151,6 +161,8 @@ class Account(object):
         for key, item in kwargs.items():
             kwargsitem = ['title', 'byname']
             if key in kwargsitem:
+                setattr(self, key, item)
+            elif key not in kwargsitem:
                 setattr(self, key, item)
         
         self._intlz()
@@ -188,49 +200,57 @@ class Account(object):
                                         
     # Input Data
     @listwrapper
-    def addscd(self, index, amt):
+    def addscd(self, idxval, amt):
         """
         Add the amount on the 'scd_in' column of dataframe.
         
         Parameters
         ----------
-        index : index, list
+        idxval : index, list
         amt : int, float, list
         
         Returns
         -------
         None
         """
-        if isinstance(index, int): index = self.index[index]
-        self._df.loc[index, 'scd_in'] += amt
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+        
+        self._df.loc[idxval, 'scd_in'] += amt
         self._cal_bal()
     
     @listwrapper
-    def subscd(self, index, amt):
+    def subscd(self, idxval, amt):
         """
         Add the amount on the 'scd_out' column of dataframe.
         
         Parameters
         ----------
-        index : index, list
+        idxval : index, list
         amt : int, float, list
         
         Returns
         -------
         None
         """
-        if isinstance(index, int): index = self.index[index]
-        self._df.loc[index, 'scd_out'] += amt
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+            
+        self._df.loc[idxval, 'scd_out'] += amt
         self._cal_bal()
         
     @listwrapper
-    def addamt(self, index, amt, rcvfrm=None, note="add_amt"):
+    def addamt(self, idxval, amt, rcvfrm=None, note="add_amt"):
         """
         Add the amount on the 'amt_in' column of dataframe.
         
         Parameters
         ----------
-        index : index, list
+        idxval : index, list
         amt : int, float, list
         rcvfrm : str, default None
         note : str, default "add_amt"
@@ -239,21 +259,25 @@ class Account(object):
         -------
         None
         """
-        if isinstance(index, int): index = self.index[index]
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+            
         if amt == 0:
             return    
-        self.iptjnl(index, amt, 0, rcvfrm, None, note)
-        self._df.loc[index, 'amt_in'] += amt
+        self.iptjnl(idxval, amt, 0, rcvfrm, None, note)
+        self._df.loc[idxval, 'amt_in'] += amt
         self._cal_bal()
         
     @listwrapper
-    def subamt(self, index, amt, payto=None, note="sub_amt"):
+    def subamt(self, idxval, amt, payto=None, note="sub_amt"):
         """
         Add the amount on the 'amt_out' column of dataframe.
         
         Parameters
         ----------
-        index : index, list
+        idxval : index, list
         amt : int, float, list
         payto : str, default None
         note : str, default "sub_amt"
@@ -262,21 +286,25 @@ class Account(object):
         -------
         None
         """
-        if isinstance(index, int): index = self.index[index]
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+            
         if amt == 0:
             return
-        self.iptjnl(index, 0, amt, None, payto, note)
-        self._df.loc[index, 'amt_out'] += amt
+        self.iptjnl(idxval, 0, amt, None, payto, note)
+        self._df.loc[idxval, 'amt_out'] += amt
         self._cal_bal()
         
     @listwrapper
-    def iptamt(self, index, amt, rcvfrm=None, payto=None, note=None):
+    def iptamt(self, idxval, amt, rcvfrm=None, payto=None, note=None):
         """
         If the amount is positive, apply the addamt, else apply the subamt
         
         Parameters
         ----------
-        index : index, list
+        idxval : index, list
         amt : int, float, list
         rcvfrm : str, default None
         payto : str, default None
@@ -286,34 +314,42 @@ class Account(object):
         -------
         None
         """
-        if isinstance(index, int): index = self.index[index]
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+            
         if amt == 0:
             return
         if amt > 0:
             if rcvfrm is None:
                 rcvfrm = "add_amt"
-            self.addamt(index, amt, rcvfrm, note)
+            self.addamt(idxval, amt, rcvfrm, note)
         else:
             if payto is None:
                 payto = "sub_amt"
-            self.subamt(index, -amt, payto, note)
+            self.subamt(idxval, -amt, payto, note)
         
-    def iptjnl(self, index, amt_in, amt_out, rcvfrm=None, payto=None, note=None):
+    def iptjnl(self, idxval, amt_in, amt_out, rcvfrm=None, payto=None, note=None):
         """
         Add the amount on the journal.
         
         Parameters
         ----------
-        index : index
+        idxval : index
         amt_in : int, float
         amt_out : int, float
         rcvfrm : str, default None
         payto : str, default None
         note : str, default None
         """
-        if isinstance(index, int): index = self.index[index]
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+            
         tmpjnl = DataFrame([[amt_in, amt_out, rcvfrm, payto, note]], 
-                           columns=JNLCOL, index=[index])
+                           columns=JNLCOL, index=[idxval])
         self._jnl = pd.concat([self._jnl, tmpjnl])
     
     def __getattr__(self, attr):
@@ -370,7 +406,7 @@ class Account(object):
                 
                 Examples
                 --------
-                >>> idx = Index("2021.01", "2021.12")
+                >>> idx = DateIndex("2021.01", "2021.12")
                 >>> acc = Account(idx, "loan")
                 >>> acc.addscd(idx[0], 1000)
                 >>> acc.subscd(idx[5], 800)
@@ -405,8 +441,30 @@ class Account(object):
                 """
                 if isinstance(val, date):
                     return self.spristnc._df.loc[val, self.colname]
-                val = self.spristnc.index[val]
-                return self.spristnc._df.loc[val, self.colname]
+                elif isinstance(val, int):
+                    val = self.spristnc.index[val]
+                    return self.spristnc._df.loc[val, self.colname]
+                elif isinstance(val, str):
+                    val = str_to_date(val)
+                    return self.spristnc._df.loc[val, self.colname]
+                elif isinstance(val, slice):
+                    if isinstance(val.start, str):
+                        new_start = str_to_date(val.start)
+                    elif isinstance(val.start, int):
+                        new_start = self.spristnc.index[val.start]
+                    elif isinstance(val.start, date):
+                        new_start = val.start
+                        
+                    if isinstance(val.stop, str):
+                        new_stop = str_to_date(val.stop)
+                    elif isinstance(val.stop, int):
+                        new_stop = self.spristnc.index[val.stop]
+                    elif isinstance(val.stop, date):
+                        new_stop = val.stop
+                        
+                    new_slice = slice(new_start, new_stop)
+                    return self.spristnc._df.loc[new_slice, self.colname]
+            
             cls.__getitem__ = getitem
             
             return cls
@@ -462,7 +520,7 @@ class Account(object):
         self.rsdl_in_cum = self.rsdl_in_cum(self)
         self.rsdl_out_cum = self.rsdl_out_cum(self)
     
-    def amt_rqrd_excs(self, index, rqrdamt, minunit = 100):
+    def amt_rqrd_excs(self, idxval, rqrdamt, minunit = 100):
         """
         Calculate the additional amount required in excess of the balance.
         
@@ -476,12 +534,16 @@ class Account(object):
         -------
         amt_rqrd : float
         """
-        if isinstance(index, int): index = self.index[index]
-        amt_rqrd = max(rqrdamt - self.bal_end[index], 0)
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+        
+        amt_rqrd = max(rqrdamt - self.bal_end[idxval], 0)
         amt_rqrd = round_up(amt_rqrd, -log10(minunit))
         return amt_rqrd
     
-    def send(self, index, amt, account, note=None):
+    def send(self, idxval, amt, account, note=None):
         """
         Transfer the amount from this account to the opponent account.
         
@@ -496,18 +558,22 @@ class Account(object):
         -------
         None
         """
-        if isinstance(index, int): index = self.index[index]
+        if isinstance(idxval, int): 
+            idxval = self.index[idxval]
+        elif isinstance(idxval, str):
+            idxval = str_to_date(idxval)
+            
         if 'title' in account.__dict__:
             account_title = account.title
         else:
             account_title = None
-        self.subamt(index, amt, account_title, note)
+        self.subamt(idxval, amt, account_title, note)
         
         if 'title' in self.__dict__:
             self_title = self.title
         else:
             self_title = None
-        account.addamt(index, amt, self_title, note)
+        account.addamt(idxval, amt, self_title, note)
         
     def __repr__(self):
         """Return a string representation for this object."""
@@ -666,7 +732,7 @@ class set_rate:
             self.acc.addscd(self.scdidx, scdamt)
         elif self.crit == "subscd":
             self.acc.subscd(self.scdidx, scdamt)      
-        
+
         
 class Merge(object):
     def __init__(self, dct:dict):
@@ -701,8 +767,8 @@ class Merge(object):
         for key, item in self._dct.items():
             if len(item.index) > len(mainidx):
                 mainidx = item.index
-        self.index = mainidx
-        self.index = self.index.arr
+        self.index = DateIndex._simple_new(mainidx)
+        #self.index = self.index.arr
         
     def _adjust_idx(self, tmpdf):
         if len(tmpdf.index) < len(self.index):
@@ -739,7 +805,7 @@ class Merge(object):
                 
                 Examples
                 --------
-                >>> idx = Index("2021.01", "2021.12")
+                >>> idx = DateIndex("2021.01", "2021.12")
                 >>> acc = Account(idx, "loan")
                 >>> acc.addscd(idx[0], 1000)
                 >>> acc.subscd(idx[5], 800)

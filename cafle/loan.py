@@ -33,14 +33,15 @@ from .genfunc import (
     limited
     )
 from .index import(
-    Index,
-    PrjtIndex
+    RangeIndex,
+    DateIndex,
+    date_range,
+    str_to_date,
     )
 from .account import (
     Account,
     Merge
     )
-from .index import Index, PrjtIndex
 
 __all__ = ['Loan', 'Merge_loan', 'Intlz_loan']
 
@@ -97,7 +98,7 @@ class Loan(object):
     """
     def __init__(self,
                  title = None, # string, "LoanA"
-                 index = Index('2020-01', periods=1), # basic index class
+                 index = date_range('2020-01', periods=1), # basic index class
                  idxfn = None, # financial index class
                  amt_ntnl = 0, # float, notional amount
                  amt_intl = 0, # initial withdraw amount
@@ -107,6 +108,7 @@ class Loan(object):
                  **kwargs
                  ):
         
+        self.title = title
         self.index = index
         if idxfn is None:
             self.idxfn = index
@@ -117,7 +119,6 @@ class Loan(object):
         self.amt_intl = amt_intl
         self.rate_IR = rate_IR
         self.cycle_IR = cycle_IR
-        self.title = title
         self.rnk = rnk
         
         # Input kwargs data
@@ -156,12 +157,15 @@ class Loan(object):
     def _intlz(self):
         for key in self.fnkey:
             setattr(self, key, Account(self.index, title=self.title))
+            
+        # Notional amount
         self.ntnl = Account(self.index, title=self.title)
         self.ntnl.amt = self.amt_ntnl
         self.ntnl.subscd(self.idxfn[0], self.ntnl.amt)
         self.ntnl.addscd(self.idxfn[-1], self.ntnl.amt)
         self._dct['ntnl'] = self.ntnl
         
+        # Interest rate
         self.IR = Account(self.index, title=self.title)
         self.IR.rate = self.rate_IR
         self.IR.cycle = self.cycle_IR
@@ -369,7 +373,7 @@ class Intlz_loan:
         
         self.title = title
         self.len = len(title)
-        self.rnk = rnk
+        self._rnk = rnk
         self.amt_ntnl = amt_ntnl
         self.amt_intl = amt_intl
         self.rate_IR = rate_IR
@@ -451,6 +455,12 @@ class Intlz_loan:
                 return False
         return True
         
+    @property
+    def rnk(self):
+        return sorted(self._rnk, reverse=False)
+    @property
+    def rnk_reverse(self):
+        return sorted(self._rnk, reverse=True)
         
         
         
