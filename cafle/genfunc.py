@@ -90,7 +90,14 @@ class EmptyClass:
     def __getitem__(self, key):
         return self.__dict__[key]
         
-        
+
+def is_scalar(data):
+    if isinstance(data, (str, int, float)):
+        return True
+    else:
+        return False
+
+
 def is_iterable(data):
     if type(data) == str:
         return False

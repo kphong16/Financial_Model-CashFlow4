@@ -8,18 +8,18 @@ Created on 2022-03-08
 
 import xlsxwriter
 from datetime import date
-from cafle import Write, WriteWS
+from cafle import Write
 
         
 class WriteCF:
-    def __init__(self, file_adrs, astn):
+    def __init__(self, file_adrs, data):
         self.file_adrs  = file_adrs
-        self.astn       = astn
+        self.data       = data
         self.wb         = Write(file_adrs)
         
-        self._writeastn()
         self._writecf()
         self._writeloan()
+        #self._writecst()
         
         self.wb.close()
         
@@ -30,13 +30,13 @@ class WriteCF:
         ws = wb.add_ws("cashflow")
         
         # set variables
-        idx     = self.astn.idx.prjt
-        oprtg   = self.astn.acc.oprtg
-        equity  = self.astn.equity.equity
-        loan    = self.astn.loan.loan
-        loancst = self.astn.loancst
-        sales   = self.astn.sales.sales
-        cost    = self.astn.cost
+        idx     = self.data.idx.prjt
+        oprtg   = self.data.acc.oprtg
+        equity  = self.data.equity.equity
+        loan    = self.data.loan.loan
+        loancst = self.data.loancst
+        sales   = self.data.sales.sales
+        cost    = self.data.cost
         
         ## Write head
         ws.set_column(0, 0, 12)
@@ -83,8 +83,11 @@ class WriteCF:
             tmpdct,
             {keysgmnt: {item.byname: item.df.amt_in for key, item in itemsgmnt.items()} 
                 for keysgmnt, itemsgmnt in cost.dctsgmnt.items()}
-            )
             
+            #{"Cost" : {key: item.df.amt_in for key, item in cost.dct.items()}}
+            #{key: {key2: item2.df.amt_in for key2, item2 in item.dct.items()}
+            #for key, item in cost.dct.items()}
+            )
         tmpdct = wb.extnddct(
             tmpdct, {
             "상환_equity" : 
@@ -93,7 +96,8 @@ class WriteCF:
                 {"현금유출" : oprtg.df.amt_out},
             "운영_기말"    : 
                 {"기말잔액" : oprtg.df.bal_end},
-             })
+             }
+             )
                  
         ## Write dictionary
         wb.write_dct_col("cashflow", row, col, tmpdct, tmpfmt)
@@ -106,13 +110,13 @@ class WriteCF:
         ws = wb.add_ws("financing")
         
         # Setting Variables
-        idx = self.astn.idx.prjt
-        oprtg = self.astn.acc.oprtg
-        equity = self.astn.equity.equity
-        loan = self.astn.loan.loan
-        loancst = self.astn.loancst
-        sales = self.astn.sales.sales
-        cost = self.astn.cost
+        idx = self.data.idx.prjt
+        oprtg = self.data.acc.oprtg
+        equity = self.data.equity.equity
+        loan = self.data.loan.loan
+        loancst = self.data.loancst
+        sales = self.data.sales.sales
+        cost = self.data.cost
         
         # Write Head
         ws.set_column(0, 0, 12)
@@ -140,79 +144,25 @@ class WriteCF:
         wb.write_dct_col("financing", row, col, tmpdct, tmpfmt)
 
         
-    #### Write Astn ####
-    def _writeastn(self):
-        # New Worksheet
-        wb = self.wb
-        ws = wb.add_ws("assumption")
-        
-        # Setting Variables
-        idx = self.astn.idx.prjt
-        oprtg = self.astn.acc.oprtg
-        equity = self.astn.equity.equity
-        loan = self.astn.loan.loan
-        loancst = self.astn.loancst
-        sales = self.astn.sales.sales
-        cost = self.astn.cost
-        
-        # Write Head
-        ws.set_column(0, 0, 12)
-        ws.write(0, 0, "ASSUMPTION", wb.bold)
-        ws.write(1, 0, "Written at: " + wb.now)
-        ws.write(2, 0, self.file_adrs)
-        
-        row = 5
-        col = 0
-        
-        ## Write loan astn
-        wd = WriteWS(ws, row, col)
-        fmt1 = [wb.bold, wb.num]
-        fmt2 = [wb.bold, wb.pct]
-        fmt3 = [wb.bold, wb.num, wb.date, wb.date]
-        
-        wd('Index', wb.bold)
-        _idx = self.astn.idx
-        wd(['prjt', _idx.prd_prjt, _idx.prjt[0], _idx.prjt[-1]], fmt3)
-        wd(['loan', _idx.mtrt, _idx.loan[0], _idx.loan[-1]], fmt3)
-        wd(['cstrn', _idx.prd_cstrn, _idx.cstrn[0], _idx.cstrn[-1]], fmt3)
-        wd.row += 1
-        
-        wd('Equity', wb.bold)
-        vallst = [
-            ('title'        ,fmt1),
-            ('amt_ntnl'     ,fmt1),
-            ('amt_intl'     ,fmt1),
-            ]
-        for _val, _fmt in vallst:
-            wd({_val: self.astn.equity.__dict__[_val]}, _fmt, drtn='col')
-        wd.row += 3
-        wd.col = 0
-        
-        wd('Loan', wb.bold)
-        vallst = [
-            ('title'        ,fmt1),
-            ('rnk'          ,fmt1),
-            ('amt_ntnl'     ,fmt1),
-            ('amt_intl'     ,fmt1),
-            ('rate_fee'     ,fmt2),
-            ('rate_IR'      ,fmt2),
-            ('rate_fob'     ,fmt2),
-            ('rate_allin'   ,fmt2),
-            ('amt_fee'      ,fmt1),
-            ('amt_IR'       ,fmt1),
-            ]
-        for _val, _fmt in vallst:
-            wd({_val: self.astn.loan.__dict__[_val]}, _fmt, drtn='col')
-        wd.row += 3
-        wd.col = 0
-        wd(['Maturity', self.astn.loan.mtrt], fmt1)
-        wd(['amt_ttl', self.astn.loan.amt_ttl], fmt1)
-        wd(['rate_arng', self.astn.loan.rate_arng], fmt2)
-        wd(['allin', self.astn.loan.allin], fmt2)
         
         
         
-
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
         

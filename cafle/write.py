@@ -8,8 +8,9 @@ Created on Sun Dec 19 17:41:35 2021
 
 import xlsxwriter
 from datetime import datetime
+from cafle.genfunc import is_iterable, is_scalar
 
-__all__ = ['Write']
+__all__ = ['Write', 'WriteWS']
 
 class Write(object):
     def __init__(self, file_adrs):
@@ -66,7 +67,10 @@ class Write(object):
     def add_ws(self, wsname):
         self.ws[wsname] = self.wb.add_worksheet(wsname)
         return self.ws[wsname]
-        
+    
+    # Write Val
+    def write(self, wsname, row, col, val, fmt=None):
+        self.ws[wsname].write(row, col, val, fmt)
         
     # Write Row
     def write_row(self, wsname, row, col, data, fmt=None):
@@ -88,7 +92,10 @@ class Write(object):
         for key, item in datadct.items():
             if type(item) is not dict:
                 ws.write(row, col, key, fmtlst[0])
-                ws.write_column(row+1, col, item, fmtlst[1])
+                if is_iterable(item):
+                    ws.write_column(row+1, col, item, fmtlst[1])
+                else:
+                    ws.write(row+1, col, item, fmtlst[1])
                 col += 1
             if type(item) is dict:
                 ws.write(row, col, key, fmtlst[0])
@@ -117,11 +124,6 @@ class Write(object):
                 {"amt_in" : ln.fob._df.amt_in,
                  "bal_end" : ln.fob._df.bal_end}
         return tmpdct
-
-        
-    # Write Val
-    def write(self, wsname, row, col, val, fmt=None):
-        self.ws[wsname].write(row, col, val, fmt)
     
     # Extend List
     def extndlst(self, lst, *arg):
@@ -135,9 +137,77 @@ class Write(object):
         return dct
     
     
+class WriteWS(Write):
+    def __init__(self, _ws, _row, _col):
+        global ws
+        global row
+        global col
+        
+        self.ws = _ws
+        self.row = _row
+        self.col = _col
     
+    def __call__(self, data, fmt=None, drtn='row',cellno=1):
+        if is_scalar(data):
+            self.ws.write(self.row, self.col, data, fmt)
+        if is_iterable(data) and not isinstance(data, dict):
+            if drtn == 'row':
+                if is_scalar(fmt):
+                    self.ws.write_row(self.row, self.col, data, fmt)
+                elif is_iterable(fmt):
+                    for no, (val_data, val_fmt) in enumerate(zip(data, fmt)):
+                        self.ws.write(self.row, self.col+no, val_data, val_fmt)
+            elif drtn == 'col':
+                if is_scalar(fmt):
+                    self.ws.write_column(self.row, self.col, data, fmt)
+                elif is_iterable(fmt):
+                    for no, (val_data, val_fmt) in enumerate(zip(data, fmt)):
+                        self.ws.write(self.row+no, self.col, val_data, val_fmt)
+        elif isinstance(data, dict):
+            self.write_dct_col(self.ws, self.row, self.col, data, fmt)
+            if drtn == 'row':
+                self.nextcell(self.dctdatalen(data), drtn)
+        self.nextcell(cellno, drtn)
     
+    def setcell(self, _row=None, _col=None):
+        if _row is not None:
+            global row
+            self.row = _row
+        if _col is not None:
+            global col
+            self.col = _col
     
+    def nextcell(self, no, drtn):
+        global row
+        global col
+        
+        if drtn=='row':
+            self.row += no
+        elif drtn=='col':
+            self.col += no
+        
+    def dctdatalen(self, dct):
+        _len = 0
+        for key, item in dct.items():
+            if is_iterable(item):
+                _len = max(_len, len(item))
+        return _len
+            
+    # Write Dictionary
+    def write_dct_col(self, ws, row, col, datadct, fmtlst=None):
+        #ws = self.ws[wsname]
+        for key, item in datadct.items():
+            if type(item) is not dict:
+                ws.write(row, col, key, fmtlst[0])
+                if is_iterable(item):
+                    ws.write_column(row+1, col, item, fmtlst[1])
+                else:
+                    ws.write(row+1, col, item, fmtlst[1])
+                col += 1
+            if type(item) is dict:
+                ws.write(row, col, key, fmtlst[0])
+                col = self.write_dct_col(wsname, row+1, col, item, fmtlst[1:])
+        return col
     
     
     
