@@ -8,15 +8,13 @@ Created on 2022-03-08
 
 import cafle as cf
 from cafle import Account
+from cafle import Assumption_Base
+from .astn_financing import idx
 
-# Get attributes from main
-idx = None
 
-
-class Acc:
+class Acc(Assumption_Base):
     def __init__(self):
-        self._dct = {}
-        self._keys = []
+        super().__init__()
         
         Account._index = idx.prjt
         
@@ -27,23 +25,7 @@ class Acc:
         acc = self._set_account(title, byname)
         
         
-    def _set_account(self, title, byname):
-        setattr(self, title, Account(title=title, byname=byname))
-        acc = getattr(self, title)
-        self._dct[title] = acc
-        self._keys.append(title)
-        return acc
+    
         
-    @property
-    def dct(self):
-        return self._dct
-        
-    @property
-    def keys(self):
-        return self._keys
-        
-    @property
-    def mrg(self):
-        return cf.Merge(self._dct)
         
         

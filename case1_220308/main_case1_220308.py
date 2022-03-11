@@ -49,8 +49,7 @@ astn = EmptyClass()
 
 #### Read Financing Data ####
 mdl_fnc = import_module(CASE + ASTNFNC)
-
-astn.idx = mdl_fnc.Idx()
+astn.idx = mdl_fnc.idx
 idx = astn.idx
 mdl_fnc.idx = idx
 
@@ -66,23 +65,17 @@ loancst = astn.loancst
 
 #### Read Sales Data and Create Sales Accounts ####
 mdl_sales = import_module(CASE + ASTNSLS)
-mdl_sales.idx = idx
-
 astn.sales = mdl_sales.Sales()
 sales = astn.sales
 
 
 #### Read Cost Data and Create Cost Accounts ####
 mdl_cost = import_module(CASE + ASTNCST)
-mdl_cost.idx = idx
-
 astn.cost = mdl_cost.Cost()
 cost = astn.cost
 
 #### Read Operating Accounts Data and Create ####
 mdl_acc = import_module(CASE + ASTNACC)
-mdl_acc.idx = idx
-
 astn.acc = mdl_acc.Acc()
 acc = astn.acc
 

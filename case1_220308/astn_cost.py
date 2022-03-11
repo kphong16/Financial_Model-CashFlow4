@@ -11,22 +11,21 @@ from pandas import Series, DataFrame
 import numpy as np
 
 import cafle as cf
-from cafle import Account
+from cafle import (
+    Account,
+    Assumption_Base,
+    )
 from cafle.genfunc import (
     rounding as R,
     PY,
     EmptyClass,
     )
+from .astn_financing import idx
     
-# Get attributes from main
-idx = None
 
-class Cost:
+class Cost(Assumption_Base):
     def __init__(self):
-        self._dct = {}
-        self._dctsgmnt = {}
-        self._keys = []
-        self._keysgmnt = []
+        super().__init__()
         self._set_initial_data()
         
     def _set_initial_data(self):
@@ -53,43 +52,7 @@ class Cost:
             [4_100 / len(idx.cstrn)] * len(idx.cstrn)
             )
         
-        
-    def _set_account(self, title, byname, sgmnt=None):
-        _acc = Account(title=title, byname=byname)
-        
-        if sgmnt is not None:
-            if sgmnt not in self._dctsgmnt:
-                self._dctsgmnt[sgmnt] = {}
-            self._keysgmnt.append(sgmnt)
-            self._dctsgmnt[sgmnt][title] = _acc
-            setattr(self, sgmnt, self._dctsgmnt[sgmnt])
-            
-        self._keys.append(title)
-        self._dct[title] = _acc
-        setattr(self, title, _acc)
-        
-        return _acc
-        
-    @property
-    def dct(self):
-        return self._dct
-        
-    @property
-    def dctsgmnt(self):
-        return self._dctsgmnt
-        
-    @property
-    def keys(self):
-        return self._keys
-        
-    @property
-    def keysgmnt(self):
-        return self._keysgmnt
-        
-    @property
-    def mrg(self):
-        return cf.Merge(self._dct)
-        
+
 
         
         

@@ -11,16 +11,16 @@ from pandas import Series, DataFrame
 import numpy as np
 
 import cafle as cf
-from cafle import Account
+from cafle import (
+    Account,
+    Assumption_Base,
+    )
 from cafle.genfunc import (
     rounding as R,
     PY,
     EmptyClass,
     )
     
-
-# Get attributes from main
-idx = None
 
 class Idx:
     def __init__(self):
@@ -31,7 +31,8 @@ class Idx:
         self.prjt   = cf.date_range("2022.01", periods=self.prd_prjt )
         self.loan   = cf.date_range("2022.03", periods=self.mtrt     )
         self.cstrn  = cf.date_range("2022.04", periods=self.prd_cstrn)
-        
+idx = Idx()
+       
         
 class Equity:
     def __init__(self):
@@ -90,11 +91,11 @@ class Loan:
         self.loan.allin         = self.allin
         
         
-class LoanCst:
+class LoanCst(Assumption_Base):
     def __init__(self, fnc_loan):
+        super().__init__()
         self.fnc_loan = fnc_loan
-        self._dct = {}
-        self._keys = []
+
         Account._index = idx.prjt
         
         title, byname = "arngfee", "주관수수료"
@@ -104,24 +105,7 @@ class LoanCst:
             amt     = fnc_loan.amt_ttl * fnc_loan.rate_arng,
             )
         
-    def _set_account(self, title, byname):
-        setattr(self, title, Account(title=title, byname=byname))
-        acc = getattr(self, title)
-        self._dct[title] = acc
-        self._keys.append(title)
-        return acc
-        
-    @property
-    def dct(self):
-        return self._dct
-        
-    @property
-    def keys(self):
-        return self._keys
-        
-    @property
-    def mrg(self):
-        return cf.Merge(self._dct)
+
         
     
         

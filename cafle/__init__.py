@@ -20,4 +20,5 @@ from .index import *
 from .account import *
 from .loan import *
 from .write import *
+from .assumption import *
 
