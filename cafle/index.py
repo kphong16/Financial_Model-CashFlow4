@@ -403,20 +403,28 @@ def date_range(
     elif allnot_none(start, end):
         dtarr = []
         start = str_to_date(start)
-        end = str_to_date(end)
-        
-        if end == start:
-            dtarr.append(start)
-        elif end > start:
-            dtarr.append(start)
-            dt_next = start
-            while True:
-                if dt_next >= end:
-                    break
+        if isinstance(end, int):
+            periods = end
+            if periods > 0:
+                dtarr.append(start)
+                dt_next = start
+            for no in range(1, periods):
                 dt_next = date_next(dt_next, freq=freq)
                 dtarr.append(dt_next)
-        elif end < start:
-            raise ValueError("The end date is before the start date.")
+        else:
+            end = str_to_date(end)
+            if end == start:
+                dtarr.append(start)
+            elif end > start:
+                dtarr.append(start)
+                dt_next = start
+                while True:
+                    if dt_next >= end:
+                        break
+                    dt_next = date_next(dt_next, freq=freq)
+                    dtarr.append(dt_next)
+            elif end < start:
+                raise ValueError("The end date is before the start date.")
         
     subarr = DateIndex._simple_new(dtarr, name=name)
     return subarr

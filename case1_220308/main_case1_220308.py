@@ -49,15 +49,15 @@ astn = EmptyClass()
 
 #### Read Financing Data ####
 mdl_fnc = import_module(CASE + ASTNFNC)
+
 astn.idx = mdl_fnc.idx
 idx = astn.idx
-mdl_fnc.idx = idx
 
-astn.equity = mdl_fnc.Equity()
-equity = astn.equity.equity
+astn.equity = mdl_fnc.Equity().equity
+equity = astn.equity
 
-astn.loan = mdl_fnc.Loan()
-loan = astn.loan.loan
+astn.loan = mdl_fnc.Loan().loan
+loan = astn.loan
 
 astn.loancst = mdl_fnc.LoanCst(astn.loan)
 loancst = astn.loancst
@@ -93,8 +93,8 @@ for idxno in idx.prjt:
     ## Set loan withdrawable
     # If it's initial date then set loans withdrawable.
     equity.set_wtdrbl_intldate(idxno, idx.prjt[0])
-    for rnk in loan.rnk:
-        loan[rnk].set_wtdrbl_intldate(idxno)
+    for rnk in loan.rnk():
+        loan.by_rnk(rnk).set_wtdrbl_intldate(idxno)
         
     ## Expected costs amount : calculate expected costs and add on scd_in
     # calculate operating costs on scd_in
@@ -102,16 +102,16 @@ for idxno in idx.prjt:
     _cost_loancst = loancst.mrg.scd_in[idxno]
     
     # calculate financial costs and set on scd_in.
-    for rnk in loan.rnk:
-        _loan = loan[rnk]
+    for rnk in loan.rnk():
+        _loan = loan.by_rnk(rnk)
         if idxno == idx.loan[0]:
             _loan.fee.addscd(idxno, _loan.fee.amt)
         if all([_loan.is_wtdrbl, not _loan.is_repaid]):
             _loan.IR.addscd(idxno, _loan.IRamt_topay(idxno))
             _loan.fob.addscd(idxno, _loan.fobamt_topay(idxno))
-    _cost_loanfee   = loan.ttl.fee.scd_in[idxno]
-    _cost_loanIR    = loan.ttl.IR.scd_in[idxno]
-    _cost_loanfob   = loan.ttl.fob.scd_in[idxno]
+    _cost_loanfee   = loan.mrgloans().fee.scd_in[idxno]
+    _cost_loanIR    = loan.mrgloans().IR.scd_in[idxno]
+    _cost_loanfob   = loan.mrgloans().fob.scd_in[idxno]
             
     # total expected costs
     _cost_ttl = _cost_oprtg + _cost_loancst \
@@ -125,13 +125,13 @@ for idxno in idx.prjt:
     
     # withdraw loan amount
     if idxno == idx.loan[0]:
-        for rnk in loan.rnk_reverse:
-            _loan = loan[rnk]
+        for rnk in loan.rnk(reverse=True):
+            _loan = loan.by_rnk(rnk)
             _amt_wtdrw += _loan.wtdrw(idxno, _loan.amt_intl, acc.oprtg)
     _amt_rqrd = max(_amt_rqrd - _amt_wtdrw, 0)
     
-    for rnk in loan.rnk_reverse:
-        _loan = loan[rnk]
+    for rnk in loan.rnk(reverse=True):
+        _loan = loan.by_rnk(rnk)
         _amt_wtdrw = _loan.wtdrw(idxno, _amt_rqrd, acc.oprtg)
         _amt_rqrd = max(_amt_rqrd - _amt_wtdrw, 0)
         
@@ -145,8 +145,8 @@ for idxno in idx.prjt:
         _amt_scd = item.scd_in[idxno]
         acc.oprtg.send(idxno, _amt_scd, item)
     
-    for rnk in loan.rnk:
-        _loan = loan[rnk]
+    for rnk in loan.rnk():
+        _loan = loan.by_rnk(rnk)
         acc.oprtg.send(idxno, _loan.fee.scd_in[idxno], _loan.fee)
         acc.oprtg.send(idxno, _loan.IR.scd_in[idxno], _loan.IR)
         acc.oprtg.send(idxno, _loan.fob.scd_in[idxno], _loan.fob)
@@ -154,8 +154,8 @@ for idxno in idx.prjt:
     ## Repay loan amount
     if loan.is_repaid is False:
         if acc.repay.bal_end[idxno] >= 0:
-            for rnk in loan.rnk:
-                _loan = loan[rnk]
+            for rnk in loan.rnk():
+                _loan = loan.by_rnk(rnk)
                 if rnk == 0 or loan[rnk-1].is_repaid:
                     _amtrpy = _loan.amt_repay(idxno, acc.repay.bal_end[idxno])
                     acc.repay.send(idxno, _amtrpy, _loan.ntnl)
@@ -163,16 +163,16 @@ for idxno in idx.prjt:
                 if loan.is_repaid is True:
                     acc.repay.send(idxno, acc.repay.bal_end[idxno], acc.oprtg)
         if idxno >= idx.loan[-1]: # at maturity
-            for rnk in loan.rnk:
-                _loan = loan[rnk]
+            for rnk in loan.rnk():
+                _loan = loan.by_rnk(rnk)
                 _amtrpy = _loan.amt_rpy_exptd(idxno)
                 acc.oprtg.send(idxno, _amtrpy, _loan.ntnl)
                 _loan.set_repaid(idxno)
     
     ## Set back loans unwithdrawable at maturity
     equity.setback_wtdrbl_mtrt(idxno)
-    for rnk in loan.rnk:
-        loan[rnk].setback_wtdrbl_mtrt(idxno)
+    for rnk in loan.rnk():
+        loan.by_rnk(rnk).setback_wtdrbl_mtrt(idxno)
         
     ## Pay return on the investment
     if idxno == idx.prjt[-1]:

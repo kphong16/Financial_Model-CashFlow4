@@ -112,14 +112,15 @@ class Write(object):
              "amt_in" : ln.ntnl._df.amt_in,
              "bal_end" : ln.ntnl._df.bal_end}
         
-        tmpdct["IR_" + ln.title] = \
-            {"amt_in" : ln.IR._df.amt_in,
-             "bal_end" : ln.IR._df.bal_end}
-        if 'fee' in ln.fnkey:
+        if 'IR' in ln.keys:
+            tmpdct["IR_" + ln.title] = \
+                {"amt_in" : ln.IR._df.amt_in,
+                 "bal_end" : ln.IR._df.bal_end}
+        if 'fee' in ln.keys:
             tmpdct["Fee_" + ln.title] = \
                 {"amt_in" : ln.fee._df.amt_in,
                  "bal_end" : ln.fee._df.bal_end}
-        if 'fob' in ln.fnkey:
+        if 'fob' in ln.keys:
             tmpdct["Fob_" + ln.title] = \
                 {"amt_in" : ln.fob._df.amt_in,
                  "bal_end" : ln.fob._df.bal_end}

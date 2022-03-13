@@ -32,8 +32,8 @@ class WriteCF:
         # set variables
         idx     = self.astn.idx.prjt
         oprtg   = self.astn.acc.oprtg
-        equity  = self.astn.equity.equity
-        loan    = self.astn.loan.loan
+        equity  = self.astn.equity
+        loan    = self.astn.loan
         loancst = self.astn.loancst
         sales   = self.astn.sales.sales
         cost    = self.astn.cost
@@ -108,8 +108,8 @@ class WriteCF:
         # Setting Variables
         idx = self.astn.idx.prjt
         oprtg = self.astn.acc.oprtg
-        equity = self.astn.equity.equity
-        loan = self.astn.loan.loan
+        equity = self.astn.equity
+        loan = self.astn.loan
         loancst = self.astn.loancst
         sales = self.astn.sales.sales
         cost = self.astn.cost
@@ -131,8 +131,8 @@ class WriteCF:
         tmpfmt = [wb.bold, wb.bold, wb.bold, wb.num]
         tmpdct = {}
         # Write Loan
-        for rnk in loan.rnk:
-            tmpdct["Loan_"+loan[rnk].title] = wb.dct_loan(loan[rnk])
+        for rnk in loan.rnk():
+            tmpdct["Loan_"+loan.by_rnk(rnk).title] = wb.dct_loan(loan.by_rnk(rnk))
         # Write Equity
         tmpdct["Equity_"+equity.title] = wb.dct_loan(equity)
         
@@ -149,8 +149,8 @@ class WriteCF:
         # Setting Variables
         idx = self.astn.idx.prjt
         oprtg = self.astn.acc.oprtg
-        equity = self.astn.equity.equity
-        loan = self.astn.loan.loan
+        equity = self.astn.equity
+        loan = self.astn.loan
         loancst = self.astn.loancst
         sales = self.astn.sales.sales
         cost = self.astn.cost
@@ -197,18 +197,17 @@ class WriteCF:
             ('rate_fee'     ,fmt2),
             ('rate_IR'      ,fmt2),
             ('rate_fob'     ,fmt2),
-            ('rate_allin'   ,fmt2),
-            ('amt_fee'      ,fmt1),
-            ('amt_IR'       ,fmt1),
+            ('allin'        ,fmt2),
             ]
         for _val, _fmt in vallst:
-            wd({_val: self.astn.loan.__dict__[_val]}, _fmt, drtn='col')
+            tmplst = [getattr(item, _val) for item in loan.dct.values()]
+            wd({_val: tmplst}, _fmt, drtn='col')
         wd.row += 3
         wd.col = 0
         wd(['Maturity', self.astn.loan.mtrt], fmt1)
-        wd(['amt_ttl', self.astn.loan.amt_ttl], fmt1)
+        wd(['ttl_ntnl', self.astn.loan.ttl_ntnl], fmt1)
         wd(['rate_arng', self.astn.loan.rate_arng], fmt2)
-        wd(['allin', self.astn.loan.allin], fmt2)
+        wd(['allin_ttl', self.astn.loan.allin_ttl()], fmt2)
         
         
         

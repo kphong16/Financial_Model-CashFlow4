@@ -15,7 +15,9 @@ from .astn_financing import idx
 class Acc(Assumption_Base):
     def __init__(self):
         super().__init__()
+        self._set_initial_data()
         
+    def _set_initial_data(self):
         Account._index = idx.prjt
         
         title, byname = "oprtg", "운영계좌"

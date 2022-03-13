@@ -26,7 +26,9 @@ from .astn_financing import idx
 class Sales(Assumption_Base):
     def __init__(self):
         super().__init__()
+        self._set_initial_data()
         
+    def _set_initial_data(self):
         Account._index = idx.prjt
         
         title, byname = "sales", "자산매각대금"
