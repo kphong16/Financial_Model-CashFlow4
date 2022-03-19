@@ -29,6 +29,10 @@ class Write(object):
         return self.wb.add_format(tmpdct)
     
     @property
+    def nml(self):
+        return self.wb.add_format({'bold': False})
+    
+    @property
     def bold(self):
         return self.wb.add_format({'bold': True})
         

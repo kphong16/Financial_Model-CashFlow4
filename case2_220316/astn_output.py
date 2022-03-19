@@ -20,6 +20,7 @@ class WriteCF:
         self._writeastn()
         self._writecf()
         self._writeloan()
+        self._writefbal()
         
         self.wb.close()
         
@@ -210,14 +211,46 @@ class WriteCF:
         wd(['allin_ttl', self.astn.loan.allin_ttl()], fmt2)
         
         
+    #### Write Financial Balance Table ####
+    def _writefbal(self):
+        # new worksheet
+        wb = self.wb
+        ws = wb.add_ws("financial_balance")
         
+        # set variables
+        idx     = self.astn.idx.prjt
+        oprtg   = self.astn.acc.oprtg
+        equity  = self.astn.equity
+        loan    = self.astn.loan
+        loancst = self.astn.loancst
+        sales   = self.astn.sales
+        cost    = self.astn.cost
+        
+        ## Write head
+        ws.set_column(0, 0, 12)
+        ws.write(0, 0, "Financial Balance Table", wb.bold)
+        ws.write(1, 0, "Written at: " + wb.now)
+        ws.write(2, 0, self.file_adrs)        
 
+        row = 5
+        col = 0
         
+        ## Write financial balance table
+        wd = WriteWS(ws, row, col)
+        fmt1 = [wb.bold, wb.num]
+        fmt2 = [wb.bold, wb.pct]
+        fmt3 = [wb.bold, wb.num, wb.date, wb.date]
+        fmt4 = [wb.bold, wb.nml, wb.num]
         
+        wd('Sales', wb.bold)
+        ttl_sales = 0
+        for key, item in sales.dct.items():
+            wd([key, "", item.salesamt], fmt4)
+            ttl_sales += item.salesamt
+        wd(["Total amt", "", ttl_sales], fmt4, cellno=2)
         
-        
-        
-        
+        wd('Costs', wb.bold)
+        ttl_costs = 0
         
         
         
