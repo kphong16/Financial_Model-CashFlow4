@@ -157,7 +157,7 @@ class WriteCF:
         cost = self.astn.cost
         
         # Write Head
-        ws.set_column(0, 0, 12)
+        ws.set_column("A:K", 12)
         ws.write(0, 0, "ASSUMPTION", wb.bold)
         ws.write(1, 0, "Written at: " + wb.now)
         ws.write(2, 0, self.file_adrs)
@@ -227,7 +227,9 @@ class WriteCF:
         cost    = self.astn.cost
         
         ## Write head
-        ws.set_column(0, 0, 12)
+        ws.set_column("A:A", 12)
+        ws.set_column("B:B", 22)
+        ws.set_column("C:E", 10)
         ws.write(0, 0, "Financial Balance Table", wb.bold)
         ws.write(1, 0, "Written at: " + wb.now)
         ws.write(2, 0, self.file_adrs)        
@@ -251,6 +253,49 @@ class WriteCF:
         
         wd('Costs', wb.bold)
         ttl_costs = 0
+        
+        # Write operating costs
+        for keym in cost.key_main:
+            wd(keym, wb.bold, cellno=0)
+            wd.nextcell(1, 'col')
+        
+            sum_balend = 0
+            for key, item in cost.dctsgmnt[keym].items():
+                wd([item.byname, item.bal_end[-1]], [wb.nml, wb.num])
+                sum_balend += item.bal_end[-1]
+            ttl_costs += sum_balend
+            wd(["subtotal", sum_balend], [wb.bold, wb.num])
+            wd.nextcell(-1, 'col')
+            
+        # Write financing costs
+        for rnk in loan.rnk():
+            ln = loan.by_rnk(rnk)
+            wd(ln.title, wb.bold, cellno=0)
+            wd.nextcell(1, 'col')
+            
+            sum_balend = 0
+            if ln.rate_fee > 0:
+                wd(["fee", ln.fee.bal_end[-1]], [wb.nml, wb.num])
+                sum_balend += ln.fee.bal_end[-1]
+            if ln.rate_IR > 0:
+                wd(["IR", ln.IR.bal_end[-1]], [wb.nml, wb.num])
+                sum_balend += ln.IR.bal_end[-1]
+            if ln.rate_fob > 0:
+                wd(["fob", ln.fob.bal_end[-1]], [wb.nml, wb.num])
+                sum_balend += ln.fob.bal_end[-1]
+            ttl_costs += sum_balend
+            wd(["subtotal", sum_balend], [wb.bold, wb.num])
+            wd.nextcell(-1, 'col')
+            
+        for key, item in loancst.dct.items():
+            wd(key, wb.bold, cellno=0)
+            wd.nextcell(1, 'col')
+            
+            wd([item.byname, item.bal_end[-1]], [wb.nml, wb.num])
+            ttl_costs += item.bal_end[-1]
+            wd.nextcell(-1, 'col')
+            
+        wd(["Total", "", ttl_costs], [wb.bold, wb.nml, wb.num])
         
         
         
