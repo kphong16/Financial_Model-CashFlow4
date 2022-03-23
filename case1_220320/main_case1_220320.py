@@ -182,7 +182,8 @@ for idxno in idx.prjt:
         _is_repaid = True
         if loan.is_repaid is True:
             acc.oprtg.send(idxno, acc.oprtg.bal_end[idxno], equity.ntnl)
-            
+print("Cashflow calculation finished.")            
+
 #### Print Out the Results ####
 mdl_output  = import_module(CASE + OUTPUT)
 output      = mdl_output.WriteCF(PRTNAME, astn)

@@ -32,7 +32,6 @@ class Assumption_Base:
         self._keys = []
         self._keysgmnt = []
         
-        
     @property
     def dct(self):
         if len(self._dct) == 0:
