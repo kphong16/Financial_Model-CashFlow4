@@ -27,7 +27,7 @@ class WriteCF:
         self.wb         = Write(file_adrs)
         
         # Setting Variables
-        global idx, oprtg, equity, loan, loancst, sales, cost
+        global idx, oprtg, equity, loan, loancst, sales, cost, area
         idx = self.astn.idx.prjt
         oprtg = self.astn.acc.oprtg
         equity = self.astn.equity
@@ -127,9 +127,17 @@ class WriteCF:
         fmt2 = [wb.bold, wb.pct]
         fmt3 = [wb.bold, wb.num, wb.date, wb.date]
         
-        # wd('Area(m2)', wb.bold)
-        # wd(area.mtrx)   <= write 파일 수정 필요(DataFrame을 다룰 수 있도록) <= df.to_dict('split')을 적용하여 반영 가능
-        # wd(sales.sales.rnt)
+        wd('Area(m2)', wb.bold)
+        wd(area.mtrx, fmt=wb.num, valdrtn='col')
+        wd.nextcell(1)
+        
+        wd('Area(py)', wb.bold)
+        wd(area.mtrxpy, fmt=wb.num, valdrtn='col')
+        wd.nextcell(1)
+        
+        wd('Rent', wb.bold)
+        wd(sales.sales.rnt, fmt=wb.num, valdrtn='col')
+        wd.nextcell(1)
         
         wd('Valuation', wb.bold)
         vallst = [

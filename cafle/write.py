@@ -8,6 +8,7 @@ Created on Sun Dec 19 17:41:35 2021
 
 import xlsxwriter
 from datetime import datetime
+from pandas import DataFrame
 from cafle.genfunc import is_iterable, is_scalar
 from collections import namedtuple
 
@@ -179,6 +180,63 @@ class Write(object):
             col = cell.col + depth_dct(data)
         return Cell(row, col)
         
+    # Write DataFrame
+    def write_df_col(self, cell, data, fmt=None, wsname=None, drtn='row'):
+        dfdict = data.to_dict('split')
+        row = cell.row
+        col = cell.col
+        
+        dfcollen = len(dfdict['columns'])
+        dfidxlen = len(dfdict['index'])
+        
+        if isinstance(dfdict['columns'][0], tuple):
+            dfcolno = len(dfdict['columns'][0])
+        else:
+            dfcolno = 1
+            
+        if isinstance(dfdict['index'][0], tuple):
+            dfidxno = len(dfdict['index'][0])
+        else:
+            dfidxno = 1
+        
+        if not is_iterable(fmt):
+            fmtlst = [fmt] * dfcollen
+        else:
+            fmtlst = fmt
+            
+        if dfcolno == 1:
+            self.write_row(Cell(row, col+dfidxno), dfdict['columns'], None, wsname)
+        elif dfcolno > 1:
+            _row = row
+            _col = col + dfidxno
+            for valtpl in dfdict['columns']:
+                self.write_col(Cell(_row, _col), valtpl, None, wsname)
+                _col += 1
+        
+        if dfidxno == 1:
+            self.write_col(Cell(row+dfcolno, col), dfdict['index'], None, wsname)
+        elif dfidxno > 1:
+            _row = row + dfcolno
+            _col = col
+            for valtpl in dfdict['index']:
+                self.write_row(Cell(_row, _col), valtpl, None, wsname)
+                _row += 1
+        
+        _row = row+dfcolno
+        _col = col+dfidxno
+        for valtpl in dfdict['data']:
+            self.write_row(Cell(_row, _col), valtpl, fmtlst, wsname)
+            _row += 1
+            
+        if drtn == 'col':
+            row = cell.row
+            col = cell.col + dfidxno + dfcollen
+        elif drtn == 'row':
+            row = cell.row + dfcolno + dfidxlen
+            col = cell.col
+        return Cell(row, col)
+        
+        
     # Make Dictionary of Loan
     def dct_loan(self, ln):
         tmpdct = {}
@@ -272,6 +330,11 @@ class WriteWS(Write):
     def __call__(self, data, fmt=None, valdrtn='row', drtn='row'):
         if not is_iterable(data):
             self.cell = self.write(self.cell, data, fmt, self.ws, drtn)
+        elif isinstance(data, DataFrame):
+            if valdrtn == 'row':
+                raise ValueError("function for row option is not written.")
+            elif valdrtn == 'col':
+                self.cell = self.write_df_col(self.cell, data, fmt, self.ws, drtn)
         elif is_iterable(data) and not isinstance(data, dict):
             if valdrtn == 'row':
                 self.cell = self.write_row(self.cell, data, fmt, self.ws, drtn)
