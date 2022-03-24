@@ -272,7 +272,7 @@ class WriteWS(Write):
     def __call__(self, data, fmt=None, valdrtn='row', drtn='row'):
         if not is_iterable(data):
             self.cell = self.write(self.cell, data, fmt, self.ws, drtn)
-        if is_iterable(data) and not isinstance(data, dict):
+        elif is_iterable(data) and not isinstance(data, dict):
             if valdrtn == 'row':
                 self.cell = self.write_row(self.cell, data, fmt, self.ws, drtn)
             elif valdrtn == 'col':

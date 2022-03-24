@@ -41,11 +41,17 @@ ASTNFNC = ".astn_financing"
 ASTNSLS = ".astn_sales"
 ASTNCST = ".astn_cost"
 ASTNACC = ".astn_account"
-OUTPUT = ".astn_output"
+OUTPUT  = ".astn_output"
+ASTNAREA    = ".astn_area"
 DATE = date.today().strftime('%y%m%d')
 PRTNAME = "output_" + VERSION + "_" + DATE + ".xlsx"
 astn = EmptyClass()
 
+
+#### Read Area Data ####
+mdl_area = import_module(CASE + ASTNAREA)
+astn.area = mdl_area.area
+area = astn.area
 
 #### Read Financing Data ####
 mdl_fnc = import_module(CASE + ASTNFNC)

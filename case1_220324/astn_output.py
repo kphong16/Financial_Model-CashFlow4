@@ -19,6 +19,7 @@ class WriteCF:
     loancst = None
     sales = None
     cost = None
+    area = None
     
     def __init__(self, file_adrs, astn):
         self.file_adrs  = file_adrs
@@ -34,8 +35,10 @@ class WriteCF:
         loancst = self.astn.loancst
         sales = self.astn.sales
         cost = self.astn.cost
+        area = self.astn.area
         
         self._writeastn()
+        self._writevltn()
         self._writecf()
         self._writeloan()
         self._writefbal()
@@ -45,7 +48,7 @@ class WriteCF:
 
     #### Write Astn ####
     def _writeastn(self):
-        global idx, oprtg, equity, loan, loancst, sales, cost
+        global idx, oprtg, equity, loan, loancst, sales, cost, area
         
         # New Worksheet
         wb = self.wb
@@ -103,9 +106,48 @@ class WriteCF:
         wd(['allin_ttl', self.astn.loan.allin_ttl()], fmt2)
         
 
+    #### Write Valuation ####
+    def _writevltn(self):
+        global idx, oprtg, equity, loan, loancst, sales, cost, area
+        
+        # New Worksheet
+        wb = self.wb
+        ws = wb.add_ws("valuation")
+        wd = WriteWS(ws, Cell(0,0))
+        
+        # Write Head
+        ws.set_column("A:K", 12)
+        wd("VALUATION", wb.bold)
+        wd("Written at: " + wb.now)
+        wd(self.file_adrs)
+        wd.nextcell(2)
+        
+        ## Write loan astn
+        fmt1 = [wb.bold, wb.num]
+        fmt2 = [wb.bold, wb.pct]
+        fmt3 = [wb.bold, wb.num, wb.date, wb.date]
+        
+        # wd('Area(m2)', wb.bold)
+        # wd(area.mtrx)   <= write 파일 수정 필요(DataFrame을 다룰 수 있도록) <= df.to_dict('split')을 적용하여 반영 가능
+        # wd(sales.sales.rnt)
+        
+        wd('Valuation', wb.bold)
+        vallst = [
+            ('rntamt'       ,fmt1),
+            ('dpstamt'      ,fmt1),
+            ('mngcst'       ,fmt1),
+            ('NOI'          ,fmt1),
+            ('cap'          ,fmt2),
+            ('valuation'    ,fmt1),
+            ]
+        for _val, _fmt in vallst:
+            wd({_val: sales.sales.vltn[_val]}, _fmt)
+        wd.nextcell(1)
+        
+
     #### Write Cashflow ####
     def _writecf(self):
-        global idx, oprtg, equity, loan, loancst, sales, cost
+        global idx, oprtg, equity, loan, loancst, sales, cost, area
         
         # new worksheet
         wb = self.wb
@@ -176,7 +218,7 @@ class WriteCF:
         
     #### Write Loan ####
     def _writeloan(self):
-        global idx, oprtg, equity, loan, loancst, sales, cost
+        global idx, oprtg, equity, loan, loancst, sales, cost, area
         
         # New Worksheet
         wb = self.wb
@@ -211,7 +253,7 @@ class WriteCF:
         
     #### Write Financial Balance Table ####
     def _writefbal(self):
-        global idx, oprtg, equity, loan, loancst, sales, cost
+        global idx, oprtg, equity, loan, loancst, sales, cost, area
         
         # new worksheet
         wb = self.wb

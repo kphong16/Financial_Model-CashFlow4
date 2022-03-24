@@ -21,6 +21,7 @@ from cafle.genfunc import (
     EmptyClass,
     )
     
+untamt = 1_000_000
 
 class Idx:
     def __init__(self):
