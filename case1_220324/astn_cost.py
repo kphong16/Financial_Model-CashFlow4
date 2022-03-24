@@ -20,6 +20,7 @@ from cafle.genfunc import (
     PY,
     EmptyClass,
     )
+from cafle.assumption import read_standard_process_rate_table
 from .astn_financing import idx
     
 
@@ -63,9 +64,11 @@ class Cost(Assumption_Base):
         acc.rate_rsrv = 0.15
         acc.area_ttl = 16_327
         acc.amt_unt = acc.amt_prd / acc.area_ttl
+        acc.prcrate = read_standard_process_rate_table(len(idx.cstrn), tolist=True)
+        acc.prcrate_cml = np.cumsum(acc.prcrate).tolist()
         acc.addscd(
             idx.cstrn,
-            [acc.amt_prd / len(idx.cstrn)] * len(idx.cstrn)
+            [acc.amt_prd * rt for rt in acc.prcrate]
             )
         acc.addscd(idx.cstrn[-1], acc.amt_rsrv)
         
