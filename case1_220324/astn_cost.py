@@ -22,11 +22,13 @@ from cafle.genfunc import (
     )
 from cafle.assumption import read_standard_process_rate_table
 from .astn_financing import idx
+from .astn_area import area
     
 
 class Cost(Assumption_Base):
-    def __init__(self):
+    def __init__(self, sales):
         super().__init__()
+        self.sales = sales
         self._set_initial_data()
         
     def _set_initial_data(self):
@@ -36,9 +38,12 @@ class Cost(Assumption_Base):
         sgmnt = "lnd"
         self.key_main.append(sgmnt)
         
-        title, byname = "lndprchs", "토지매입비"
-        acc = self._set_account(title, byname, sgmnt)
-        acc.addscd(idx.loan[0], 14_704)
+        title, byname   = "lndprchs", "토지매입비"
+        acc             = self._set_account(title, byname, sgmnt)
+        acc.area        = 9_074.4 #평
+        acc.amt_ttl     = 14_704
+        acc.note        = f"{acc.area:,.0f}평 x {acc.amt_ttl * 1000 / acc.area:,.0f}천원/평"
+        acc.addscd(idx.loan[0], acc.amt_ttl)
         
         title, byname = "aqstntx", "취등록세"
         acc = self._set_account(title, byname, sgmnt)
@@ -58,14 +63,15 @@ class Cost(Assumption_Base):
         
         title, byname = "drtcstrn", "도급공사비"
         acc = self._set_account(title, byname, sgmnt)
-        acc.amt_ttl =           66_700
-        acc.amt_prd =           56_695
-        acc.amt_rsrv =          10_005
-        acc.rate_rsrv = 0.15
-        acc.area_ttl = 16_327
-        acc.amt_unt = acc.amt_prd / acc.area_ttl
-        acc.prcrate = read_standard_process_rate_table(len(idx.cstrn), tolist=True)
+        acc.amt_ttl     = 62_000 # 전층 상온 공사비
+        acc.amt_prd     = 55_800
+        acc.amt_rsrv    =  6_200
+        acc.rate_rsrv   =   0.10
+        acc.area_ttl    = 16_327
+        acc.amt_unt     = acc.amt_prd / acc.area_ttl
+        acc.prcrate     = read_standard_process_rate_table(len(idx.cstrn), tolist=True)
         acc.prcrate_cml = np.cumsum(acc.prcrate).tolist()
+        acc.note        = f"{acc.area_ttl:,.0f}평 x {acc.amt_unt*1000:,.0f}천원/평"
         acc.addscd(
             idx.cstrn,
             [acc.amt_prd * rt for rt in acc.prcrate]
@@ -124,7 +130,10 @@ class Cost(Assumption_Base):
         
         title, byname = "rntbrkrg", "임대대행수수료"
         acc = self._set_account(title, byname, sgmnt)
-        acc.addscd(idx.cstrn[-1],1_036)
+        acc.rnt_unt   = self.sales.sales.rnt.rntamt.sum()
+        acc.rnt_brcg_fee = acc.rnt_unt * 2
+        acc.note    = f"월 임대료 {acc.rnt_unt:,.0f} x 2개월"
+        acc.addscd(idx.cstrn[-1],acc.rnt_brcg_fee)#1_036)
         
         title, byname = "mrktgcst", "광고홍보비"
         acc = self._set_account(title, byname, sgmnt)
@@ -138,6 +147,7 @@ class Cost(Assumption_Base):
         acc = self._set_account(title, byname, sgmnt)
         acc.amt_unt = 30
         acc.amt_ttl = len(idx.loan) * acc.amt_unt
+        acc.note    = f"{acc.amt_unt*1000:,.0f}천원/월, {len(idx.loan)}개월"
         acc.addscd(idx.loan, [acc.amt_unt] * len(idx.loan))
         
         title, byname = "trustfee", "관리신탁수수료"
@@ -146,6 +156,9 @@ class Cost(Assumption_Base):
         
         title, byname = "dptybnk", "대리금융기관수수료" #deputy banking fee
         acc = self._set_account(title, byname, sgmnt)
+        acc.amt_unt = 30
+        acc.amt_ttl = acc.amt_unt * 2
+        acc.note    = f"{acc.amt_unt*1000:,.0f}천원, 2년"
         acc.addscd(idx.loan[0],     60)
         
         title, byname = "lawncstg", "법무/약정/사평/감평"

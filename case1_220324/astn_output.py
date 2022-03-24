@@ -299,7 +299,10 @@ class WriteCF:
         
             sum_balend = 0
             for key, item in cost.dctsgmnt[keym].items():
-                wd([item.byname, item.bal_end[-1]], [wb.nml, wb.num])
+                if 'note' in item.__dict__.keys():
+                    wd([item.byname, item.bal_end[-1], item.note], [wb.nml, wb.num, wb.nml])
+                else:
+                    wd([item.byname, item.bal_end[-1]], [wb.nml, wb.num])
                 sum_balend += item.bal_end[-1]
             ttl_costs += sum_balend
             wd(["subtotal", sum_balend], [wb.bold, wb.num])

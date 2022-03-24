@@ -37,11 +37,11 @@ dirname = os.getcwd().split('/')[-1]
 CASE = dirname # directory name
 VERSION = "v1.0"
 
-ASTNFNC = ".astn_financing"
-ASTNSLS = ".astn_sales"
-ASTNCST = ".astn_cost"
-ASTNACC = ".astn_account"
-OUTPUT  = ".astn_output"
+ASTNFNC     = ".astn_financing"
+ASTNSLS     = ".astn_sales"
+ASTNCST     = ".astn_cost"
+ASTNACC     = ".astn_account"
+OUTPUT      = ".astn_output"
 ASTNAREA    = ".astn_area"
 DATE = date.today().strftime('%y%m%d')
 PRTNAME = "output_" + VERSION + "_" + DATE + ".xlsx"
@@ -68,16 +68,14 @@ loan = astn.loan
 astn.loancst = mdl_fnc.LoanCst(astn.loan)
 loancst = astn.loancst
 
-
 #### Read Sales Data and Create Sales Accounts ####
 mdl_sales = import_module(CASE + ASTNSLS)
 astn.sales = mdl_sales.Sales()
 sales = astn.sales
 
-
 #### Read Cost Data and Create Cost Accounts ####
 mdl_cost = import_module(CASE + ASTNCST)
-astn.cost = mdl_cost.Cost()
+astn.cost = mdl_cost.Cost(sales)
 cost = astn.cost
 
 #### Read Operating Accounts Data and Create ####

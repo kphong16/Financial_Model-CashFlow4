@@ -65,6 +65,29 @@ class AreaMtrx(Assumption_Base):
         _mtrx[('rent', 'sum')] = rent_sum_tpl + rent_share_tpl
         _mtrx = _mtrx.fillna(0)
         
+        _mtrx = _mtrx[[('exclsv', 'nmlstrg'),
+                       ('exclsv', 'cldstrg'),
+                       ('exclsv',  'canopy'),
+                       ('exclsv',   'berth'),
+                       ('exclsv',  'office'),
+                       ('exclsv',   'stair'),
+                       ('exclsv',  'mchnrm'),
+                       ('exclsv',     'sum'),
+                       ('common', 'passage'),
+                       ('common',    'ramp'),
+                       ('common',     'sum'),
+                       (   'ttl',     'sum'),
+                       (  'rent',     'sum')]]
+        _mtrx = _mtrx.reindex([
+                         ('ttlfloor',  'b1'),
+                         ('ttlfloor',  'f1'),
+                         ('ttlfloor',  'f2'),
+                         ('ttlfloor',  'f3'),
+                         ('ttlfloor',  'f4'),
+                         ('nonfloor',  'f1'),
+                         ('nonfloor',  'f3'),
+                         ])
+        
         return _mtrx
         
         
@@ -104,6 +127,7 @@ class AreaMtrx(Assumption_Base):
                          ('nonfloor', 'sum'),
                          (     'ttl', 'sum'),
                          ])
+        
         return _mtrx
         
 area = AreaMtrx()
