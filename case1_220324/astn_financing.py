@@ -25,13 +25,13 @@ untamt = 1_000_000
 
 class Idx:
     def __init__(self):
-        self.prd_cstrn  = 24
-        self.mtrt       = 26
-        self.prd_prjt   = self.mtrt + 5
+        self.prd_cstrn  = 22 # 
+        self.mtrt       = 28 # 28 <- BearLogi
+        self.prd_prjt   = self.mtrt + 4
         
-        self.prjt   = cf.date_range("2022.01", periods=self.prd_prjt )
-        self.loan   = cf.date_range("2022.03", periods=self.mtrt     )
-        self.cstrn  = cf.date_range("2022.04", periods=self.prd_cstrn)
+        self.prjt   = cf.date_range("2022.03", periods=self.prd_prjt )
+        self.loan   = cf.date_range("2022.04", periods=self.mtrt+1   )
+        self.cstrn  = cf.date_range("2022.05", periods=self.prd_cstrn)
 idx = Idx()
        
 
@@ -55,14 +55,27 @@ class Loan:
         self.loan = cf.Loan(
             index       = idx.prjt,
             idxfn       = idx.loan,
+            
+            #Bear Logi
             rate_arng   = 0.020,
             title       = [  "tra",      "trb"],
             rnk         = [      0,          1],
-            amt_ntnl    = [ 60_000,     34_700],
-            amt_intl    = [      0,     34_700],
+            amt_ntnl    = [ 60_000,     36_000],
+            amt_intl    = [      0,     36_000],
             rate_fee    = [  0.020,      0.020],
             rate_IR     = [  0.044,      0.080],
             rate_fob    = [  0.002,      0.000],
+            
+            #KBAM
+            #rate_arng   = 0.020,
+            #title       = [  "tra",      "trb"],
+            #rnk         = [      0,          1],
+            #amt_ntnl    = [ 58_000,     34_700],
+            #amt_intl    = [      0,     34_700],
+            #rate_fee    = [  0.020,      0.020],
+            #rate_IR     = [  0.044,      0.080],
+            #rate_fob    = [  0.002,      0.000],
+            
             )
         self._initial_setting()
         
@@ -84,10 +97,13 @@ class LoanCst(Assumption_Base):
             idxval  = idx.loan[0],
             amt     = fnc_loan.amt_arng,
             )
+            
+        title, byname = "brdglncst", "브릿지론비용"
+        acc = self._set_account(title, byname)
+        acc.addscd(idx.loan[0], 540) # 전체 540, 4월 말까지 400
+            
         
 
-        
-    
         
         
         

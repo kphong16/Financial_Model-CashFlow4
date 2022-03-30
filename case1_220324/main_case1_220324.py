@@ -35,7 +35,7 @@ from cafle.genfunc import (
 
 dirname = os.getcwd().split('/')[-1]
 CASE = dirname # directory name
-VERSION = "v1.0"
+VERSION = "v1.0_BearLogi" #"v1.0_SeungJi"
 
 ASTNFNC     = ".astn_financing"
 ASTNSLS     = ".astn_sales"

@@ -8,6 +8,7 @@ Created on 2022-03-08
 
 import xlsxwriter
 from datetime import date
+import numpy as np
 from cafle import Write, WriteWS, Cell
 
         
@@ -42,6 +43,7 @@ class WriteCF:
         self._writecf()
         self._writeloan()
         self._writefbal()
+        self._writecstrn()
         
         self.wb.close()
 
@@ -67,14 +69,51 @@ class WriteCF:
         fmt2 = [wb.bold, wb.pct]
         fmt3 = [wb.bold, wb.num, wb.date, wb.date]
         
-        wd('Index', wb.bold)
+        wd('[Index]', wb.bold)
         _idx = self.astn.idx
         wd(['prjt', _idx.prd_prjt, _idx.prjt[0], _idx.prjt[-1]], fmt3)
         wd(['loan', _idx.mtrt, _idx.loan[0], _idx.loan[-1]], fmt3)
         wd(['cstrn', _idx.prd_cstrn, _idx.cstrn[0], _idx.cstrn[-1]], fmt3)
         wd.nextcell(1)
         
-        wd('Equity', wb.bold)
+        wd('[Sales: Rent]', wb.bold)
+        _srnt = sales.sales.rnt
+        wd(_srnt, fmt=wb.num, valdrtn='col')
+        wd(["sum", "-", "-",
+            _srnt.area.sum(),
+            _srnt.rntamt.sum(),
+            _srnt.mngamt.sum(),
+            _srnt.dpstamt.sum(),
+            _srnt.ttlamt.sum(),
+            _srnt.rntamty.sum(),
+            _srnt.mngamty.sum(),
+            _srnt.ttlamty.sum(),
+            ], 
+            fmt=wb.num)
+        wd.nextcell(1)
+        
+        wd('[Valuation]', wb.bold)
+        vallst = [
+            ('rntamt'       ,fmt1),
+            ('mngcst'       ,fmt1),
+            #('vcncy'        ,fmt2),
+            ('NOI'          ,fmt1),
+            ('cap'          ,fmt2),
+            ('dpstamt'      ,fmt1),
+            ('valuation'    ,fmt1),
+            ]
+        for _val, _fmt in vallst:
+            wd({_val: sales.sales.vltn[_val]}, _fmt)
+        wd.nextcell(1)
+        
+        wd('[Cost: 도급공사비]', wb.bold)
+        wd(['amt_ttl', cost.drtcstrn.amt_ttl], [wb.bold, wb.num])
+        wd(['amt_unt', cost.drtcstrn.amt_unt*1_000, cost.drtcstrn.area_ttl], [wb.bold, wb.num, wb.num])
+        wd(['amt_prd', cost.drtcstrn.amt_prd], [wb.bold, wb.num])
+        wd(['amt_rsrv', cost.drtcstrn.amt_rsrv, cost.drtcstrn.rate_rsrv], [wb.bold, wb.num, wb.pct])
+        wd.nextcell(1)
+        
+        wd('[Equity]', wb.bold)
         vallst = [
             ('title'        ,fmt1),
             ('amt_ntnl'     ,fmt1),
@@ -84,7 +123,7 @@ class WriteCF:
             wd({_val: self.astn.equity.__dict__[_val]}, _fmt)
         wd.nextcell(1)
         
-        wd('Loan', wb.bold)
+        wd('[Loan]', wb.bold)
         vallst = [
             ('title'        ,fmt1),
             ('rnk'          ,fmt1),
@@ -100,7 +139,7 @@ class WriteCF:
             wd({_val: tmplst}, _fmt)
         wd.nextcell(1)
         
-        wd(['Maturity', self.astn.loan.mtrt], fmt1)
+        wd(['maturity', _idx.mtrt], fmt1)
         wd(['ttl_ntnl', self.astn.loan.ttl_ntnl], fmt1)
         wd(['rate_arng', self.astn.loan.rate_arng], fmt2)
         wd(['allin_ttl', self.astn.loan.allin_ttl()], fmt2)
@@ -122,7 +161,7 @@ class WriteCF:
         wd(self.file_adrs)
         wd.nextcell(2)
         
-        ## Write loan astn
+        ## Write valuation astn
         fmt1 = [wb.bold, wb.num]
         fmt2 = [wb.bold, wb.pct]
         fmt3 = [wb.bold, wb.num, wb.date, wb.date]
@@ -136,20 +175,44 @@ class WriteCF:
         wd.nextcell(1)
         
         wd('Rent', wb.bold)
-        wd(sales.sales.rnt, fmt=wb.num, valdrtn='col')
+        _srnt = sales.sales.rnt
+        cell = wd(_srnt, fmt=wb.num, valdrtn='col')
+        wd(["sum", "-", "-",
+            _srnt.area.sum(),
+            _srnt.rntamt.sum(),
+            _srnt.mngamt.sum(),
+            _srnt.dpstamt.sum(),
+            _srnt.ttlamt.sum(),
+            _srnt.rntamty.sum(),
+            _srnt.mngamty.sum(),
+            _srnt.ttlamty.sum(),
+            ], 
+            fmt=wb.num)
         wd.nextcell(1)
         
         wd('Valuation', wb.bold)
+        _vltn = sales.sales.vltn
+        wd(['rntamt', _vltn['rntamt'], ""], [wb.bold, wb.num, wb.nml])
+        wd(['mngcst', _vltn['mngcst'], ""], [wb.bold, wb.num, wb.nml])
+        #wd(['vcncy', _vltn['vcncy'], ""], [wb.bold, wb.pct, wb.nml])
+        wd(['NOI', _vltn['NOI'], "임관리수익 - 운영비용"], [wb.bold, wb.num, wb.nml])
+        wd(['cap', _vltn['cap'], ""], [wb.bold, wb.pct, wb.nml])
+        wd(['dpstamt', _vltn['dpstamt'], ""], [wb.bold, wb.num, wb.nml])
+        wd(['valuation', _vltn['valuation'], "NOI / cap + 보증금"], [wb.bold, wb.num, wb.nml])
+        
+        """
         vallst = [
             ('rntamt'       ,fmt1),
-            ('dpstamt'      ,fmt1),
             ('mngcst'       ,fmt1),
+            ('vcncy'        ,fmt2),
             ('NOI'          ,fmt1),
             ('cap'          ,fmt2),
+            ('dpstamt'      ,fmt1),
             ('valuation'    ,fmt1),
             ]
         for _val, _fmt in vallst:
             wd({_val: sales.sales.vltn[_val]}, _fmt)
+        """
         wd.nextcell(1)
         
 
@@ -235,7 +298,7 @@ class WriteCF:
         
         # Write Head
         ws.set_column("A:A", 12)
-        wd("ASSUMPTION", wb.bold)
+        wd("FINANCING", wb.bold)
         wd("Written at: " + wb.now)
         wd(self.file_adrs)
         cell = wd.nextcell(2)
@@ -267,10 +330,13 @@ class WriteCF:
         wb = self.wb
         ws = wb.add_ws("financial_balance")
         wd = WriteWS(ws, Cell(0,0))
+        amt_lst = []
                 
         ## Write head
         ws.set_column("A:A", 12)
         ws.set_column("B:B", 18)
+        ws.set_column("C:D", 12)
+        ws.set_column("E:E", 40)
         wd("Financial Balance Table", wb.bold)
         wd("Written at:" + wb.now)
         wd(self.file_adrs)
@@ -282,6 +348,7 @@ class WriteCF:
         fmt3 = [wb.bold, wb.num, wb.date, wb.date]
         fmt4 = [wb.bold, wb.nml, wb.num]
         
+        ## Sales
         wd('Sales', wb.bold)
         ttl_sales = 0
         for key, item in sales.dct.items():
@@ -290,7 +357,9 @@ class WriteCF:
         wd(["Total amt", "", ttl_sales], fmt4)
         wd.nextcell(2)
         
+        ## Costs
         wd('Costs', wb.bold)
+        cell=wd(['key1', 'key2', 'amt', 'ratio', 'note'], wb.bold)
         ttl_costs = 0
         
         # Write operating costs
@@ -299,13 +368,16 @@ class WriteCF:
         
             sum_balend = 0
             for key, item in cost.dctsgmnt[keym].items():
+                _val = item.bal_end[-1]
                 if 'note' in item.__dict__.keys():
-                    wd([item.byname, item.bal_end[-1], item.note], [wb.nml, wb.num, wb.nml])
+                    wd([item.byname, _val, "", item.note], [wb.nml, wb.num, wb.nml, wb.nml])
                 else:
-                    wd([item.byname, item.bal_end[-1]], [wb.nml, wb.num])
-                sum_balend += item.bal_end[-1]
+                    wd([item.byname, _val], [wb.nml, wb.num])
+                sum_balend += _val
+                amt_lst.append(_val)
             ttl_costs += sum_balend
             wd(["subtotal", sum_balend], [wb.bold, wb.num])
+            amt_lst.append(sum_balend)
             wd.nextcell(-1, 'col')
             
         # Write financing costs
@@ -315,31 +387,93 @@ class WriteCF:
             
             sum_balend = 0
             if ln.rate_fee > 0:
-                wd(["fee", ln.fee.bal_end[-1]], [wb.nml, wb.num])
-                sum_balend += ln.fee.bal_end[-1]
+                _val = ln.fee.bal_end[-1]
+                wd(["fee", _val], [wb.nml, wb.num])
+                sum_balend += _val
+                amt_lst.append(_val)
             if ln.rate_IR > 0:
-                wd(["IR", ln.IR.bal_end[-1]], [wb.nml, wb.num])
-                sum_balend += ln.IR.bal_end[-1]
+                _val = ln.IR.bal_end[-1]
+                wd(["IR", _val], [wb.nml, wb.num])
+                sum_balend += _val
+                amt_lst.append(_val)
             if ln.rate_fob > 0:
-                wd(["fob", ln.fob.bal_end[-1]], [wb.nml, wb.num])
-                sum_balend += ln.fob.bal_end[-1]
+                _val = ln.fob.bal_end[-1]
+                wd(["fob", _val], [wb.nml, wb.num])
+                sum_balend += _val
+                amt_lst.append(_val)
             ttl_costs += sum_balend
             wd(["subtotal", sum_balend], [wb.bold, wb.num])
+            amt_lst.append(sum_balend)
             wd.nextcell(-1, 'col')
             
         for key, item in loancst.dct.items():
             wd(key, wb.bold, drtn='col')
             
             wd([item.byname, item.bal_end[-1]], [wb.nml, wb.num])
+            amt_lst.append(item.bal_end[-1])
             ttl_costs += item.bal_end[-1]
             wd.nextcell(-1, 'col')
             
         wd(["Total", "", ttl_costs], [wb.bold, wb.nml, wb.num])
+        amt_lst.append(ttl_costs)
+        
+        # Write ratio
+        wb.write_col(
+            Cell(cell.row, cell.col+3), 
+            [val/ttl_costs for val in amt_lst], 
+            fmt=wb.pct, 
+            wsname=ws)
+        
+        wd.setcell(Cell(cell.row + len(amt_lst), cell.col))
+        wd.nextcell(2)    
+        ## Profit
+        wd('Profit', wb.bold)
+        wd(['equity', '', equity.amt_ntnl], [wb.bold, wb.num, wb.num]) 
+        wd(['ttl_sales', '', ttl_sales], [wb.bold, wb.num, wb.num])
+        wd(['ttl_costs', '', ttl_costs], [wb.bold, wb.num, wb.num])
+        wd(['profit', '', equity.amt_ntnl + ttl_sales - ttl_costs], [wb.bold, wb.num, wb.numb])
         
         
+    #### Write Construction ####
+    def _writecstrn(self):
+        global idx, oprtg, equity, loan, loancst, sales, cost, area
         
+        # New Worksheet
+        wb = self.wb
+        ws = wb.add_ws("construction")
+        wd = WriteWS(ws, Cell(0,0))
         
+        # Write Head
+        ws.set_column("A:A", 12)
+        wd("CONSTRUCTION", wb.bold)
+        wd("Written at: " + wb.now)
+        wd(self.file_adrs)
+        cell = wd.nextcell(2)
         
+        # Write Note
+        wd(['amt_ttl', cost.drtcstrn.amt_ttl], [wb.bold, wb.num])
+        wd(['amt_prd', cost.drtcstrn.amt_prd], [wb.bold, wb.num])
+        wd(['amt_rsrv', cost.drtcstrn.amt_rsrv], [wb.bold, wb.num])
+        wd(['rate_rsrv', cost.drtcstrn.rate_rsrv], [wb.bold, wb.pct])
+        wd(['area_ttl', cost.drtcstrn.area_ttl], [wb.bold, wb.num])
+        wd(['amt_unt', cost.drtcstrn.amt_unt*1_000], [wb.bold, wb.num])
+        wd(['note', cost.drtcstrn.note], [wb.bold, wb.nml])
+        
+        # Write index and data
+        wd.nextcell(2)
+        wd(['index', 'prcrate', 'prcrate_cml', 'amt', 'amt_cml'], wb.bold)
+        wd(self.astn.idx.cstrn, wb.date, 'col', 'col')
+        wd(cost.drtcstrn.prcrate, wb.pct, 'col', 'col')
+        wd(cost.drtcstrn.prcrate_cml, wb.pct, 'col', 'col')
+        
+        _amt = [cost.drtcstrn.amt_prd * val for val in cost.drtcstrn.prcrate]
+        _amt[-1] = _amt[-1] + cost.drtcstrn.amt_rsrv
+        wd(_amt, wb.num, 'col', 'col')
+        
+        _amt_cml = np.cumsum(_amt).tolist()        
+        cell = wd(_amt_cml, wb.num, 'col', 'row')
+        wd.setcell(cell.row, 0)
+
         
         
         
