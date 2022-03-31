@@ -89,6 +89,14 @@ class EmptyClass:
         
     def __getitem__(self, key):
         return self.__dict__[key]
+
+    @property
+    def dict(self):
+        return self.__dict__
+
+    @property
+    def keys(self):
+        return self.__dict__.keys()
         
 
 def is_scalar(data):

@@ -260,7 +260,31 @@ class Write(object):
                 {"amt_in" : ln.fob._df.amt_in,
                  "bal_end" : ln.fob._df.bal_end}
         return tmpdct
-    
+
+    # Make Dictionary of Loan
+    def dctprt_loan(self, ln):
+        tmpdct = {}
+        tmpdct["Notional_" + ln.title] = \
+            {"인출한도": ln.ntnl._df.scd_out,
+             "상환예정": ln.ntnl._df.scd_in,
+             "인출금액": ln.ntnl._df.amt_out,
+             "상환금액": ln.ntnl._df.amt_in,
+             "대출잔액": ln.ntnl._df.bal_end}
+
+        if 'IR' in ln.keys:
+            tmpdct["IR_" + ln.title] = \
+                {"이자금액": ln.IR._df.amt_in,
+                 "누적이자": ln.IR._df.bal_end}
+        if 'fee' in ln.keys:
+            tmpdct["Fee_" + ln.title] = \
+                {"수수료금액": ln.fee._df.amt_in,
+                 "누적수수료": ln.fee._df.bal_end}
+        if 'fob' in ln.keys:
+            tmpdct["미인출_" + ln.title] = \
+                {"미인출수수료": ln.fob._df.amt_in,
+                 "누적미인출": ln.fob._df.bal_end}
+        return tmpdct
+
     # Extend List
     def extndlst(self, lst, *arg):
         for val in arg:
@@ -286,7 +310,7 @@ class Write(object):
         example of fmt: 'yyyy-mm-dd', '#,##0', '#,##0.0', '0.0%'
         kwargs example: bold=True
         """
-        tmpdct = dict({'num_format': fmt}, **kwargs)
+        tmpdct = dict({'num_format': fmt, **kwargs})
         return self.wb.add_format(tmpdct)
     
     @property
@@ -316,6 +340,10 @@ class Write(object):
     @property
     def date(self):
         return self.wb.add_format({'num_format': 'yyyy-mm-dd'})
+
+    @property
+    def month(self):
+        return self.wb.add_format({'num_format': '#,##0"개월"'})
     
     @property
     def now(self):

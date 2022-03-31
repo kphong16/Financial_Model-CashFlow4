@@ -152,13 +152,15 @@ class Loan(object):
                 rate_IR     = args[2]
             else:
                 raise ValueError("rate_IR should be float")
-            
+
             kwargs = {key: item for key, item in kwargs.items() if key not in cls.key_essential}
             
             return cls._triple_new(amt_ntnl, rate_IR, **kwargs)
             
         # Keyward arguments
         if len(args) == 0:
+            for key, item in kwargs.items():
+                setattr(cls, key, item)
             return cls._kwargs_new(**kwargs)
             
             
