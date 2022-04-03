@@ -203,7 +203,7 @@ print("\nCashflow calculation is finished.")
 #### Generate output file
 mdl_output    = import_module(DIRNAME + OUTPUTFILE)
 output = mdl_output.WriteCF(PRTNAME, astn)
-
+print(f"Output file '{PRTNAME}' is generated.")
 
 
 
