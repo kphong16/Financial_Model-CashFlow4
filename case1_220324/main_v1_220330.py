@@ -31,16 +31,19 @@ from cafle.genfunc import (
 
 #### Initial Setting ####
 DIRNAME     = os.getcwd().split('/')[-1]
-VERSION     = "v1_cmn_220330"
+VERSION     = "v1_dtld_220412"
 ASTNFILE    = ".astn_" + VERSION
 OUTPUTFILE  = ".output_v1_220330"
 DATE        = date.today().strftime('%y%m%d')
-PRTNAME     = "result_" + VERSION + ".xlsx"
+PRTNAME     = "result_" + VERSION + "_" + DATE + ".xlsx"
 
 astn = EmptyClass()
 
 #### Load Assumption Data ####
 mdl_astn      = import_module(DIRNAME + ASTNFILE)
+
+land = mdl_astn.land
+astn.land   = land
 
 area = mdl_astn.area
 astn.area   = area
